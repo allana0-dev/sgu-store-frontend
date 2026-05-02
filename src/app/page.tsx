@@ -1,65 +1,306 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import homeCategoriesData from "@/data/home-categories.json";
+import homePopularProductsData from "@/data/home-popular-products.json";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import ProductCard from "@/components/store/ProductCard";
+import {
+  FiArrowRight,
+  FiPackage,
+  FiTruck,
+  FiShield,
+  FiTag,
+  FiBox,
+} from "react-icons/fi";
+
+type HomeCategory = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  href: string;
+};
+
+const CATEGORIES: HomeCategory[] = homeCategoriesData;
+
+type ProductPricing = {
+  currency: string;
+  basePrice: number;
+  salePrice: number | null;
+  compareAtPrice: number | null;
+};
+
+type HomePopularProduct = {
+  id: string;
+  name: string;
+  subtitle: string;
+  image: string;
+  href: string;
+  pricing: ProductPricing;
+  inventoryStatus: "in_stock" | "low_stock";
+  inventoryLabel: string;
+};
+
+const POPULAR_PRODUCTS = homePopularProductsData as HomePopularProduct[];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="bg-[#f6f8fb]">
+      <main className="space-y-12 pb-20">
+        <Hero />
+        <CategoryGrid />
+        <PopularOnCampus />
+        <ValuePropStrip />
+        <BottomCTA />
       </main>
     </div>
+  );
+}
+
+function Hero() {
+  return (
+    <div className="bg-white border-b border-slate-200">
+      <section className="relative min-h-[560px] lg:min-h-[660px] overflow-hidden">
+        <Image
+          src="/images/heroimage.png"
+          alt="SGU campus store essentials"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover brightness-110 contrast-105 saturate-110"
+        />
+
+        <div className="absolute inset-y-0 left-0 w-full md:w-[70%] lg:w-[58%] bg-gradient-to-r from-[#0f1450]/78 via-[#0f1450]/46 to-transparent" />
+        <div className="absolute inset-y-0 left-0 w-full md:w-[56%] lg:w-[44%] bg-gradient-to-r from-[#0b103f]/68 to-transparent" />
+
+        <div className="container-shell relative z-10 flex min-h-[560px] lg:min-h-[660px] items-center py-12 lg:py-16">
+          <div className="max-w-2xl space-y-7">
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-3xl lg:text-5xl font-black !text-white leading-tight"
+            >
+              Everything You Need,
+              <br />
+              Right Here On Campus
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-base sm:text-lg text-white/90 max-w-xl font-medium"
+            >
+              Shop textbooks, supplies, apparel, and everyday essentials. Pick
+              up or get it delivered to your dorm.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex flex-wrap gap-4"
+            >
+              <Link
+                href="/store"
+                className="bg-white text-sgu-navy px-8 py-4 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-100 transition-colors shadow-lg"
+              >
+                Shop Now <FiArrowRight />
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-white/25"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full border border-white/40 bg-white/10 backdrop-blur-sm flex items-center justify-center text-white">
+                  <FiPackage />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Pick Up</p>
+                  <p className="text-xs text-white/80">Ready in minutes</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full border border-white/40 bg-white/10 backdrop-blur-sm flex items-center justify-center text-white">
+                  <FiTruck />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Dorm Delivery</p>
+                  <p className="text-xs text-white/80">Fast & reliable</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full border border-white/40 bg-white/10 backdrop-blur-sm flex items-center justify-center text-white">
+                  <FiShield />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    Secure Checkout
+                  </p>
+                  <p className="text-xs text-white/80">Safe payments</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CategoryGrid() {
+  return (
+    <section className="container-shell pt-8">
+      <SectionHeader
+        title="Shop by Category"
+        ctaHref="/categories"
+        ctaLabel="See all categories"
+      />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {CATEGORIES.map((cat, idx) => (
+          <motion.div
+            key={cat.id}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: idx * 0.05 }}
+          >
+            <Link
+              href={cat.href}
+              className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-slate-200 hover:border-sgu-turquoise hover:shadow-lg transition-all group"
+            >
+              <Image
+                src={cat.icon}
+                alt={`${cat.name} category icon`}
+                width={52}
+                height={52}
+                className="mb-4 group-hover:scale-110 transition-transform"
+              />
+              <p className="text-sm font-bold text-sgu-navy text-center mb-1">
+                {cat.name}
+              </p>
+              <p className="text-xs text-slate-500 text-center mb-2">
+                {cat.description}
+              </p>
+              <span className="text-[10px] font-black uppercase tracking-widest text-sgu-turquoise opacity-0 group-hover:opacity-100 transition-opacity">
+                View all
+              </span>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PopularOnCampus() {
+  return (
+    <section className="container-shell">
+      <SectionHeader
+        title="Popular on Campus"
+        ctaHref="/store"
+        ctaLabel="View all products"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {POPULAR_PRODUCTS.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={
+              product as import("@/components/store/ProductDetailClient").Product
+            }
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ValuePropStrip() {
+  const props = [
+    {
+      title: "Pick Up in Minutes",
+      desc: "Order online and pick up at the bookstore.",
+      icon: <FiPackage />,
+    },
+    {
+      title: "Dorm Delivery",
+      desc: "We deliver right to your door.",
+      icon: <FiTruck />,
+    },
+    {
+      title: "Real-time Inventory",
+      desc: "See what's in stock before you buy.",
+      icon: <FiBox />,
+    },
+    {
+      title: "Secure Payments",
+      desc: "Your information is safe with us.",
+      icon: <FiShield />,
+    },
+  ];
+
+  return (
+    <section className="container-shell">
+      <div className="bg-white rounded-2xl border border-slate-200 px-5 py-6 md:px-8 md:py-7">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+          {props.map((p, idx) => (
+            <div
+              key={p.title}
+              className={`flex gap-4 ${
+                idx > 0 ? "xl:border-l xl:border-slate-200 xl:pl-6" : ""
+              }`}
+            >
+              <div className="w-11 h-11 rounded-full border-2 border-sgu-navy/80 flex items-center justify-center text-xl text-sgu-navy shrink-0">
+                {p.icon}
+              </div>
+              <div>
+                <p className="font-black text-sgu-navy mb-1">{p.title}</p>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  {p.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BottomCTA() {
+  return (
+    <section className="container-shell">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-[#191d74] via-[#1d237e] to-[#232a89] px-6 py-8 md:px-10 md:py-9 text-white">
+        <div className="absolute inset-0">
+          <div className="absolute -bottom-28 -left-10 h-56 w-[55%] rounded-[100%] bg-[#0f145f]/45" />
+          <div className="absolute -bottom-24 left-[35%] h-52 w-[40%] rounded-[100%] bg-[#0d1253]/55" />
+          <div className="absolute -bottom-20 right-0 h-44 w-[38%] rounded-[100%] bg-[#0a0f49]/60" />
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="text-center md:text-left">
+            <h2 className="text-3xl font-black mb-2">
+              Student Deals Just For You
+            </h2>
+            <p className="text-white/90 text-lg font-medium">
+              Check out weekly specials and exclusive discounts.
+            </p>
+          </div>
+
+          <Link
+            href="/store"
+            className="mx-auto md:mx-0 inline-flex items-center gap-3 rounded-xl bg-white px-7 py-3 text-base font-bold text-sgu-navy transition-transform hover:scale-[1.02] active:scale-[0.99]"
+          >
+            Shop Deals <FiTag className="h-5 w-5" />
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }

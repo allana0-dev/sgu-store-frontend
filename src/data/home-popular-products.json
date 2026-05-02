@@ -1,0 +1,200 @@
+[
+  {
+    "id": "grays-anatomy-students",
+    "name": "Gray's Anatomy for Students",
+    "subtitle": "by Richard L. Drake",
+    "description": "Easy to read, superbly illustrated, and clinically relevant, Gray’s Anatomy for Students, 4th Edition, is medical students’ go-to text for essential information in human anatomy. This fully revised volume focuses on the core information students need to know.",
+    "images": ["/images/grays-anatomy.png"],
+    "image": "/images/grays-anatomy.png",
+    "href": "/store/grays-anatomy-students",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 75,
+      "salePrice": null,
+      "compareAtPrice": null
+    },
+    "inventoryStatus": "in_stock",
+    "inventoryLabel": "In Stock",
+    "department": "Medical Supplies",
+    "tags": ["textbook", "medicine", "core"],
+    "gender": "unisex",
+    "dietary": null,
+    "rating": 4.8,
+    "reviewCount": 124,
+    "variants": [
+      { "label": "Format", "options": ["Hardcover", "Paperback", "Digital"] }
+    ]
+  },
+  {
+    "id": "sgu-backpack",
+    "name": "SGU Backpack",
+    "subtitle": "Campus carry essentials",
+    "description": "A durable, multi-compartment backpack designed specifically for SGU students. Features a padded laptop sleeve, water bottle holders, and ergonomic straps for heavy loads.",
+    "images": ["/images/sgubag.png"],
+    "image": "/images/sgubag.png",
+    "href": "/store/sgu-backpack",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 45,
+      "salePrice": null,
+      "compareAtPrice": null
+    },
+    "inventoryStatus": "in_stock",
+    "inventoryLabel": "In Stock",
+    "department": "Apparel & Accessories",
+    "tags": ["bag", "merch", "essentials"],
+    "gender": "unisex",
+    "dietary": null,
+    "rating": 4.5,
+    "reviewCount": 89,
+    "variants": [{ "label": "Color", "options": ["Navy", "Black", "Grey"] }]
+  },
+  {
+    "id": "sgu-water-bottle",
+    "name": "SGU Water Bottle",
+    "subtitle": "Insulated stainless steel",
+    "description": "Keep your drinks cold for 24 hours or hot for 12 hours with this premium insulated stainless steel water bottle. Features the SGU crest.",
+    "images": ["/images/waterbottle.png"],
+    "image": "/images/waterbottle.png",
+    "href": "/store/sgu-water-bottle",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 20,
+      "salePrice": 18,
+      "compareAtPrice": 20
+    },
+    "inventoryStatus": "low_stock",
+    "inventoryLabel": "Only 3 left",
+    "department": "Apparel & Accessories",
+    "tags": ["drinkware", "merch", "essentials"],
+    "gender": "unisex",
+    "dietary": null,
+    "rating": 4.9,
+    "reviewCount": 312,
+    "variants": [{ "label": "Size", "options": ["18 oz", "32 oz", "40 oz"] }]
+  },
+  {
+    "id": "nature-valley-granola-bar",
+    "name": "Nature Valley Granola Bar",
+    "subtitle": "Crunchy oats and honey",
+    "description": "Real honey and rolled oats provide a sweet and satisfying crunch that gives you energy to keep going. Perfect for study breaks.",
+    "images": ["/images/naturevalley.webp"],
+    "image": "/images/naturevalley.webp",
+    "href": "/store/nature-valley-granola-bar",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 2.5,
+      "salePrice": 2,
+      "compareAtPrice": 2.5
+    },
+    "inventoryStatus": "in_stock",
+    "inventoryLabel": "In Stock",
+    "department": "Snacks & Groceries",
+    "tags": ["snack", "energy", "grocery"],
+    "gender": "unisex",
+    "dietary": ["Vegetarian", "Dairy-Free"],
+    "rating": 4.2,
+    "reviewCount": 45,
+    "variants": [
+      { "label": "Flavor", "options": ["Oats & Honey", "Peanut Butter"] }
+    ]
+  },
+  {
+    "id": "sgu-notebook",
+    "name": "SGU Notebook",
+    "subtitle": "College ruled spiral notebook",
+    "description": "High-quality paper that resists ink bleed. The spiral binding prevents snags so it won't get caught on your clothes or backpack.",
+    "images": ["/images/sgubook.png"],
+    "image": "/images/sgubook.png",
+    "href": "/store/sgu-notebook",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 4,
+      "salePrice": null,
+      "compareAtPrice": null
+    },
+    "inventoryStatus": "in_stock",
+    "inventoryLabel": "In Stock",
+    "department": "Stationery",
+    "tags": ["supplies", "notes", "core"],
+    "gender": "unisex",
+    "dietary": null,
+    "rating": 4.6,
+    "reviewCount": 11,
+    "variants": [
+      { "label": "Style", "options": ["College Ruled", "Wide Ruled", "Graph"] }
+    ]
+  },
+  {
+    "id": "sgu-highlighters-4pk",
+    "name": "SGU Highlighters (4pk)",
+    "subtitle": "Bright assorted colors",
+    "description": "Chisel tip highlighters perfect for marking text and taking notes. Includes yellow, pink, blue, and green. Quick-drying and smear-free.",
+    "images": ["/images/highlighters.png"],
+    "image": "/images/highlighters.png",
+    "href": "/store/sgu-highlighters-4pk",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 6,
+      "salePrice": null,
+      "compareAtPrice": null
+    },
+    "inventoryStatus": "in_stock",
+    "inventoryLabel": "In Stock",
+    "department": "Stationery",
+    "tags": ["supplies", "study"],
+    "gender": "unisex",
+    "dietary": null,
+    "rating": 4.7,
+    "reviewCount": 56,
+    "variants": null
+  },
+  {
+    "id": "always-radiant-pads",
+    "name": "Always Radiant Pads (Size 2)",
+    "subtitle": "Heavy flow absorbency",
+    "description": "Always Radiant Size 2 Heavy Flow Pads with FlexFoam absorb 10X their weight and feel like nothing. Keep your focus on your studies with 100% leak and odor-free protection.",
+    "images": ["/images/sgubook.png"],
+    "image": "/images/sgubook.png",
+    "href": "/store/always-radiant-pads",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 8.5,
+      "salePrice": null,
+      "compareAtPrice": null
+    },
+    "inventoryStatus": "in_stock",
+    "inventoryLabel": "In Stock",
+    "department": "Personal Care",
+    "tags": ["hygiene", "pads", "essentials"],
+    "gender": "women",
+    "dietary": null,
+    "rating": 4.9,
+    "reviewCount": 215,
+    "variants": null
+  },
+  {
+    "id": "vegan-protein-cookie",
+    "name": "Munk Pack Protein Cookie",
+    "subtitle": "Double Dark Chocolate",
+    "description": "A delicious, soft-baked plant-based protein cookie. Packed with 16g of protein and 10g of fiber, it’s the perfect on-the-go snack for a busy campus day.",
+    "images": ["/images/naturevalley.webp"],
+    "image": "/images/naturevalley.webp",
+    "href": "/store/vegan-protein-cookie",
+    "pricing": {
+      "currency": "USD",
+      "basePrice": 3.0,
+      "salePrice": 2.5,
+      "compareAtPrice": 3.0
+    },
+    "inventoryStatus": "low_stock",
+    "inventoryLabel": "Only 5 left",
+    "department": "Snacks & Groceries",
+    "tags": ["snack", "energy", "protein"],
+    "gender": "unisex",
+    "dietary": ["Vegan", "Gluten-Free", "Non-GMO"],
+    "rating": 4.6,
+    "reviewCount": 78,
+    "variants": null
+  }
+]

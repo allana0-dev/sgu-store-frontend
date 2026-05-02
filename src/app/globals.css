@@ -1,26 +1,103 @@
 @import "tailwindcss";
 
 :root {
+  --sgu-navy: #1e1e64;
+  --sgu-turquoise: #00bec8;
+  --sgu-light-turquoise: #b2ebee;
+  --sgu-orange: #ff6400;
+  --sgu-red: #b30838;
+  --sgu-gray: #393939;
+  --sgu-light-gray: #a9a9a9;
+
   --background: #ffffff;
-  --foreground: #171717;
+  --surface: #f6f8fb;
+  --foreground: var(--sgu-gray);
+  --heading: var(--sgu-navy);
+  --border-subtle: #e2e6f0;
+  --focus-ring: var(--sgu-turquoise);
+  --app-header-height: 102px;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-sgu-navy: var(--sgu-navy);
+  --color-sgu-turquoise: var(--sgu-turquoise);
+  --color-sgu-light-turquoise: var(--sgu-light-turquoise);
+  --color-sgu-orange: var(--sgu-orange);
+  --color-sgu-red: var(--sgu-red);
+  --color-sgu-gray: var(--sgu-gray);
+  --color-sgu-light-gray: var(--sgu-light-gray);
+  --font-sans: var(--font-montserrat);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-montserrat), sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --app-header-height: 116px;
+  }
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+  color: var(--heading);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.container-shell {
+  width: min(1200px, 100% - 1.5rem);
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .container-shell {
+    width: min(1200px, 100% - 2rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-shell {
+    width: min(1200px, 100% - 3rem);
+  }
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+.card-surface {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(30, 30, 100, 0.06);
+}
+
+.button-primary {
+  background: var(--sgu-navy);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.button-accent {
+  background: var(--sgu-red);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.logo-safe-area {
+  padding: 16px;
 }

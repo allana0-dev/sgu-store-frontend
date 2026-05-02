@@ -1,0 +1,44 @@
+[
+  {
+    "id": "books",
+    "name": "Books",
+    "description": "Textbooks & more",
+    "icon": "/icons/bookshelficon.svg",
+    "href": "/store?category=books"
+  },
+  {
+    "id": "supplies",
+    "name": "Supplies",
+    "description": "Study essentials",
+    "icon": "/icons/supplies.svg",
+    "href": "/store?category=supplies"
+  },
+  {
+    "id": "apparel",
+    "name": "Apparel",
+    "description": "SGU gear",
+    "icon": "/icons/shirt.svg",
+    "href": "/store?category=apparel"
+  },
+  {
+    "id": "snacks",
+    "name": "Snacks",
+    "description": "Drinks & snacks",
+    "icon": "/icons/snacks.svg",
+    "href": "/store?category=snacks"
+  },
+  {
+    "id": "essentials",
+    "name": "Essentials",
+    "description": "Daily must-haves",
+    "icon": "/icons/essentials.svg",
+    "href": "/store?category=essentials"
+  },
+  {
+    "id": "tech",
+    "name": "Tech",
+    "description": "Electronics & more",
+    "icon": "/icons/headphone.svg",
+    "href": "/store?category=tech"
+  }
+]
