@@ -5,7 +5,7 @@ import { FiSend, FiCheckCircle } from "react-icons/fi";
 
 export default function ContactForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success">(
-    "idle"
+    "idle",
   );
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -132,7 +132,7 @@ export default function ContactForm() {
                   {role}
                 </span>
               </label>
-            )
+            ),
           )}
         </div>
       </div>
@@ -163,7 +163,8 @@ export default function ContactForm() {
         {/* Order Number (Optional) */}
         <div className="flex flex-col gap-2">
           <label htmlFor="orderNum" className="text-sm font-bold text-sgu-navy">
-            Order Number <span className="text-slate-400 font-normal">(Optional)</span>
+            Order Number{" "}
+            <span className="text-slate-400 font-normal">(Optional)</span>
           </label>
           <input
             type="text"
@@ -176,7 +177,10 @@ export default function ContactForm() {
 
       {/* Inquiry Type */}
       <div className="flex flex-col gap-2">
-        <label htmlFor="inquiryType" className="text-sm font-bold text-sgu-navy">
+        <label
+          htmlFor="inquiryType"
+          className="text-sm font-bold text-sgu-navy"
+        >
           Inquiry Type <span className="text-sgu-red">*</span>
         </label>
         <select
@@ -199,7 +203,7 @@ export default function ContactForm() {
       {/* Message */}
       <div className="flex flex-col gap-2">
         <label htmlFor="message" className="text-sm font-bold text-sgu-navy">
-          What is your question, comment, complaint, or compliment?{" "}
+          What is your question, comment, complaint, or feedback?{" "}
           <span className="text-sgu-red">*</span>
         </label>
         <textarea

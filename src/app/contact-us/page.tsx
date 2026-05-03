@@ -14,7 +14,7 @@ export default function ContactUsPage() {
         </h2>
         <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
           If you have a question about an order, our products, or want to leave
-          a comment, complaint, or compliment, please send it to us and a
+          a comment, complaint, or feedback, please send it to us and a
           representative will follow up with you.
         </p>
       </div>
