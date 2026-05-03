@@ -26,6 +26,13 @@ import {
   PRIMARY_NAV_ITEMS,
 } from "@/config/navigation";
 import { getCurrentPrice, getVariantSummary } from "@/lib/cart";
+import {
+  searchLocalProducts,
+  searchProducts,
+  type BackendProduct,
+} from "@/lib/products";
+import type { Product } from "@/components/store/ProductDetailClient";
+import homePopularProductsData from "@/data/home-popular-products.json";
 
 const SCROLL_HIDE_THRESHOLD = 12;
 const SCROLL_IDLE_MS = 220;
@@ -98,6 +105,19 @@ const getInitialSelectedLanguage = (): (typeof LANGUAGES)[number] => {
   );
 };
 
+const headerLocalProducts = homePopularProductsData as Product[];
+
+const mergeHeaderProducts = (
+  primary: BackendProduct[],
+  secondary: BackendProduct[],
+): BackendProduct[] => {
+  const productMap = new Map<string, BackendProduct>();
+  for (const product of [...primary, ...secondary]) {
+    if (!productMap.has(product.id)) productMap.set(product.id, product);
+  }
+  return Array.from(productMap.values());
+};
+
 export default function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
@@ -119,6 +139,9 @@ export default function AppHeader() {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dropdownResults, setDropdownResults] = useState<BackendProduct[]>([]);
+  const [isDropdownSearching, setIsDropdownSearching] = useState(false);
+  const [debouncedHeaderQuery, setDebouncedHeaderQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>(
     getInitialRecentSearches,
   );
@@ -268,6 +291,51 @@ export default function AppHeader() {
   }, [isSearchOpen]);
 
   useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setDebouncedHeaderQuery(searchQuery),
+      300,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const trimmed = debouncedHeaderQuery.trim();
+    if (!trimmed) {
+      setDropdownResults([]);
+      setIsDropdownSearching(false);
+      return;
+    }
+
+    let isActive = true;
+    setIsDropdownSearching(true);
+
+    const localMatches = searchLocalProducts(headerLocalProducts, trimmed, 5);
+
+    searchProducts(trimmed, 5)
+      .then((products) => {
+        if (isActive) {
+          setDropdownResults(
+            mergeHeaderProducts(products, localMatches).slice(0, 5),
+          );
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setDropdownResults(localMatches.slice(0, 5));
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsDropdownSearching(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [debouncedHeaderQuery]);
+
+  useEffect(() => {
     if (!isSearchOpen) {
       return;
     }
@@ -415,7 +483,7 @@ export default function AppHeader() {
 
           <nav
             aria-label="Main navigation"
-            className={`hidden items-center gap-7 md:flex overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-out ${
+            className={`hidden items-center gap-7 md:flex transition-[max-width,opacity,transform] duration-300 ease-out ${
               isSearchOpen
                 ? "max-w-0 -translate-x-3 opacity-0 pointer-events-none"
                 : "max-w-[520px] translate-x-0 opacity-100"
@@ -637,29 +705,118 @@ export default function AppHeader() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.16 }}
-                    className="absolute left-0 top-[calc(100%+0.5rem)] z-20 w-full rounded-lg border border-slate-200 bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.12)]"
+                    className="absolute left-0 top-[calc(100%+0.5rem)] z-20 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.12)]"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Recent searches
-                    </p>
-                    {recentSearches.length > 0 ? (
-                      <ul className="mt-2 flex flex-col gap-1">
-                        {recentSearches.map((entry) => (
-                          <li key={entry}>
-                            <button
-                              type="button"
-                              className="w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-sgu-gray hover:bg-slate-100"
-                              onClick={() => handleRecentSearchClick(entry)}
-                            >
-                              {entry}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                    {searchQuery.trim() ? (
+                      <>
+                        <div className="p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Results
+                          </p>
+                          {isDropdownSearching ? (
+                            <p className="mt-2 text-sm text-slate-500">
+                              Searching...
+                            </p>
+                          ) : dropdownResults.length > 0 ? (
+                            <ul className="mt-2 flex flex-col gap-0.5">
+                              {dropdownResults.map((product) => (
+                                <li key={product.id}>
+                                  <Link
+                                    href={`/store/${product.id}`}
+                                    className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-50"
+                                    onClick={() => {
+                                      persistRecentSearch(searchQuery);
+                                      setIsSearchOpen(false);
+                                    }}
+                                  >
+                                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-slate-100">
+                                      {product.imageUrl ? (
+                                        <Image
+                                          src={product.imageUrl}
+                                          alt={product.name}
+                                          fill
+                                          sizes="40px"
+                                          className="object-cover"
+                                        />
+                                      ) : (
+                                        <div className="flex h-full items-center justify-center text-[10px] font-bold text-slate-300">
+                                          SGU
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate text-sm font-semibold text-sgu-navy">
+                                        {product.name}
+                                      </p>
+                                      {product.category ? (
+                                        <p className="truncate text-xs text-slate-500">
+                                          {product.category}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                    <p className="ml-2 flex-shrink-0 text-sm font-bold text-sgu-navy">
+                                      {formatPrice(product.price, "USD")}
+                                    </p>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="mt-2 text-sm text-slate-500">
+                              No products found.
+                            </p>
+                          )}
+                        </div>
+                        <div className="border-t border-slate-200 px-3 py-2">
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold text-sgu-turquoise transition-colors hover:bg-slate-50"
+                            onClick={() => {
+                              const query = searchQuery.trim();
+                              if (!query) return;
+                              persistRecentSearch(query);
+                              router.push(
+                                `/search?q=${encodeURIComponent(query)}`,
+                              );
+                              setIsSearchOpen(false);
+                            }}
+                          >
+                            <FiSearch
+                              aria-hidden="true"
+                              className="h-3.5 w-3.5 flex-shrink-0"
+                            />
+                            <span>
+                              See all results for{" "}
+                              <strong>{searchQuery.trim()}</strong>
+                            </span>
+                          </button>
+                        </div>
+                      </>
                     ) : (
-                      <p className="mt-2 text-sm text-slate-500">
-                        No recent searches yet.
-                      </p>
+                      <div className="p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Recent searches
+                        </p>
+                        {recentSearches.length > 0 ? (
+                          <ul className="mt-2 flex flex-col gap-1">
+                            {recentSearches.map((entry) => (
+                              <li key={entry}>
+                                <button
+                                  type="button"
+                                  className="w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-sgu-gray hover:bg-slate-100"
+                                  onClick={() => handleRecentSearchClick(entry)}
+                                >
+                                  {entry}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-2 text-sm text-slate-500">
+                            No recent searches yet.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </motion.div>
                 ) : null}
@@ -743,7 +900,10 @@ export default function AppHeader() {
 
                         <div className="mt-3">
                           <p className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500">
-                            <FiGlobe aria-hidden="true" className="h-3.5 w-3.5" />
+                            <FiGlobe
+                              aria-hidden="true"
+                              className="h-3.5 w-3.5"
+                            />
                             Language
                           </p>
                           <div className="mt-1 flex flex-wrap gap-2">
@@ -925,7 +1085,10 @@ export default function AppHeader() {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      updateQuantity(item.key, item.quantity - 1)
+                                      updateQuantity(
+                                        item.key,
+                                        item.quantity - 1,
+                                      )
                                     }
                                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50"
                                     aria-label={`Decrease quantity for ${item.name}`}
@@ -938,7 +1101,10 @@ export default function AppHeader() {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      updateQuantity(item.key, item.quantity + 1)
+                                      updateQuantity(
+                                        item.key,
+                                        item.quantity + 1,
+                                      )
                                     }
                                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50"
                                     aria-label={`Increase quantity for ${item.name}`}

@@ -17,8 +17,16 @@ import ProductCard from "./ProductCard";
 const getCurrentPrice = (pricing: ProductPricing) =>
   pricing.salePrice ?? pricing.basePrice;
 
-export default function StoreClient({ products }: { products: Product[] }) {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+export default function StoreClient({
+  products,
+  initialCategory,
+}: {
+  products: Product[];
+  initialCategory?: string;
+}) {
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    initialCategory ? [initialCategory] : [],
+  );
   const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
   const [availability, setAvailability] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("default");
@@ -29,9 +37,12 @@ export default function StoreClient({ products }: { products: Product[] }) {
   // Unique categories derived from products
   const categories = useMemo(() => {
     return Array.from(
-      new Set(products.map((p) => p.department).filter(Boolean)),
+      new Set(products.map((p) => p.category).filter(Boolean)),
     ) as string[];
   }, [products]);
+
+  const formatCategory = (slug: string) =>
+    slug.charAt(0).toUpperCase() + slug.slice(1);
 
   // Filtering Logic
   const filteredProducts = useMemo(() => {
@@ -40,7 +51,7 @@ export default function StoreClient({ products }: { products: Product[] }) {
     // Category Filter
     if (selectedCategories.length > 0) {
       result = result.filter(
-        (p) => p.department && selectedCategories.includes(p.department),
+        (p) => p.category && selectedCategories.includes(p.category),
       );
     }
 
@@ -102,10 +113,14 @@ export default function StoreClient({ products }: { products: Product[] }) {
     );
   };
 
-  const removeFilter = (type: string, value: any) => {
-    if (type === "category") toggleCategory(value);
-    if (type === "rating") toggleRating(value);
-    if (type === "availability") toggleAvailability(value);
+  const removeFilter = (
+    type: "category" | "rating" | "availability",
+    value: string | number,
+  ) => {
+    if (type === "category" && typeof value === "string") toggleCategory(value);
+    if (type === "rating" && typeof value === "number") toggleRating(value);
+    if (type === "availability" && typeof value === "string")
+      toggleAvailability(value);
   };
 
   const activeFilterCount =
@@ -159,6 +174,7 @@ export default function StoreClient({ products }: { products: Product[] }) {
                     <label
                       key={cat}
                       className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => toggleCategory(cat)}
                     >
                       <div
                         className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
@@ -172,7 +188,7 @@ export default function StoreClient({ products }: { products: Product[] }) {
                         )}
                       </div>
                       <span className="text-sm text-slate-600 group-hover:text-sgu-navy">
-                        {cat}
+                        {formatCategory(cat)}
                       </span>
                     </label>
                   ))}
@@ -187,6 +203,7 @@ export default function StoreClient({ products }: { products: Product[] }) {
                     <label
                       key={star}
                       className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => toggleRating(star)}
                     >
                       <div
                         className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
@@ -223,7 +240,10 @@ export default function StoreClient({ products }: { products: Product[] }) {
                   Availability
                 </h3>
                 <div className="flex flex-col gap-3">
-                  <label className="flex items-center gap-3 cursor-pointer group">
+                  <label
+                    className="flex items-center gap-3 cursor-pointer group"
+                    onClick={() => toggleAvailability("in_stock")}
+                  >
                     <div
                       className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                         availability.includes("in_stock")
@@ -239,7 +259,10 @@ export default function StoreClient({ products }: { products: Product[] }) {
                       In Stock
                     </span>
                   </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
+                  <label
+                    className="flex items-center gap-3 cursor-pointer group"
+                    onClick={() => toggleAvailability("out_of_stock")}
+                  >
                     <div
                       className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                         availability.includes("out_of_stock")
@@ -303,7 +326,7 @@ export default function StoreClient({ products }: { products: Product[] }) {
                     key={cat}
                     className="inline-flex items-center gap-1.5 px-3 py-1 bg-sgu-turquoise/10 text-sgu-turquoise text-xs font-bold rounded-full border border-sgu-turquoise/20"
                   >
-                    {cat}
+                    {formatCategory(cat)}
                     <button
                       onClick={() => removeFilter("category", cat)}
                       className="hover:text-sgu-navy"

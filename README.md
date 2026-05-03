@@ -1,8 +1,18 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Project Checklist
+
+- Track open implementation tasks here: [docs/PROJECT_CHECKLIST.md](docs/PROJECT_CHECKLIST.md)
+
 ## Getting Started
 
 First, run the development server:
+
+Set the backend base URL in your local environment:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
 
 ```bash
 npm run dev

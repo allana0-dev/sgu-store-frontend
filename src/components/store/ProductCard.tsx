@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  FiHeart,
   FiAlertTriangle,
   FiCheckCircle,
   FiShoppingCart,
@@ -9,6 +8,7 @@ import {
   FiPlus,
 } from "react-icons/fi";
 import { useCart } from "@/components/cart/CartProvider";
+import WishlistHeartButton from "@/components/wishlist/WishlistHeartButton";
 import { getCartItemKey } from "@/lib/cart";
 import type { ProductPricing, Product } from "./ProductDetailClient";
 
@@ -49,26 +49,26 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col group h-full">
-      <Link href={product.href} className="block">
-        <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-50 mb-4">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover group-hover:scale-105 transition-transform"
+      <div className="relative mb-4">
+        <Link href={product.href} className="block">
+          <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-50">
+            <Image
+              src={product.image}
+              alt={product.name}
+              fill
+              sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="object-cover group-hover:scale-105 transition-transform"
+            />
+          </div>
+        </Link>
+        <div className="absolute right-2 top-2 z-10">
+          <WishlistHeartButton
+            productId={product.id}
+            productName={product.name}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors hover:text-sgu-turquoise"
           />
-          <span
-            aria-label={`Save ${product.name}`}
-            className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-sgu-navy transition-colors group-hover:text-sgu-turquoise z-10"
-            onClick={(e) => {
-              e.preventDefault(); // Prevent link navigation
-            }}
-          >
-            <FiHeart className="h-4 w-4" />
-          </span>
         </div>
-      </Link>
+      </div>
 
       <div className="flex flex-col flex-1 px-1">
         <Link href={product.href}>

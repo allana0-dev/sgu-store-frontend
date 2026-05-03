@@ -7,12 +7,12 @@ import {
   FiShoppingCart,
   FiMinus,
   FiPlus,
-  FiHeart,
   FiCheck,
   FiChevronRight,
 } from "react-icons/fi";
 import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 import { useCart } from "@/components/cart/CartProvider";
+import WishlistHeartButton from "@/components/wishlist/WishlistHeartButton";
 import { getCartItemKey } from "@/lib/cart";
 
 export type ProductPricing = {
@@ -38,6 +38,7 @@ export type Product = {
   pricing: ProductPricing;
   inventoryStatus: "in_stock" | "low_stock" | "out_of_stock";
   inventoryLabel: string;
+  category?: string;
   department?: string;
   tags?: string[];
   gender?: string;
@@ -188,9 +189,14 @@ export default function ProductDetailClient({
               priority
               sizes="(max-width: 1024px) 100vw, 50vw"
             />
-            <button className="absolute top-4 right-4 p-3 bg-white/80 backdrop-blur-md rounded-full shadow-sm hover:text-sgu-red transition-colors text-sgu-gray border border-slate-100">
-              <FiHeart className="w-5 h-5" />
-            </button>
+            <div className="absolute top-4 right-4 z-10">
+              <WishlistHeartButton
+                productId={product.id}
+                productName={product.name}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-100 bg-white/85 text-sgu-gray shadow-sm backdrop-blur-md transition-colors hover:text-sgu-red"
+                iconClassName="h-5 w-5"
+              />
+            </div>
           </div>
 
           {/* Thumbnails */}
@@ -585,7 +591,7 @@ export default function ProductDetailClient({
                     className="object-contain p-4 group-hover:scale-105 transition-transform"
                   />
                 </div>
-                <h4 className="font-bold text-sgu-navy text-sm line-clamp-2 mb-1 min-h-[2.5rem] leading-tight">
+                <h4 className="font-bold text-sgu-navy text-sm line-clamp-2 mb-1 min-h-10 leading-tight">
                   {rp.name}
                 </h4>
                 <div className="mt-auto pt-2">

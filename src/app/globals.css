@@ -101,3 +101,33 @@ canvas {
 .logo-safe-area {
   padding: 16px;
 }
+
+@keyframes ai-widget-nudge {
+  0%,
+  72%,
+  100% {
+    transform: translateY(0);
+  }
+
+  78% {
+    transform: translateY(-10px);
+  }
+
+  84% {
+    transform: translateY(0);
+  }
+
+  90% {
+    transform: translateY(-6px);
+  }
+
+  96% {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ai-widget-nudge {
+    animation: ai-widget-nudge 5s ease-in-out infinite;
+  }
+}

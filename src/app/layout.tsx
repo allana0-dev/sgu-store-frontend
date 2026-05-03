@@ -4,6 +4,8 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { CartProvider } from "@/components/cart/CartProvider";
 import AppFooter from "@/components/layout/AppFooter";
 import AppHeader from "@/components/layout/AppHeader";
+import AiRecommendationsWidget from "@/components/recommendations/AiRecommendationsWidget";
+import { WishlistProvider } from "@/components/wishlist/WishlistProvider";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -27,13 +29,14 @@ export default function RootLayout({
     <html lang="en" className={`${montserrat.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AuthProvider>
-          <CartProvider>
-            <AppHeader />
-            <main className="flex-1 pt-[var(--app-header-height)]">
-              {children}
-            </main>
-            <AppFooter />
-          </CartProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <AppHeader />
+              <main className="flex-1 pt-(--app-header-height)">{children}</main>
+              <AiRecommendationsWidget />
+              <AppFooter />
+            </CartProvider>
+          </WishlistProvider>
         </AuthProvider>
       </body>
     </html>
