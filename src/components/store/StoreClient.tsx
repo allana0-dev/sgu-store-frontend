@@ -72,7 +72,7 @@ export default function StoreClient({
           (p) =>
             p.inventoryStatus === "out_of_stock" ||
             p.inventoryStatus === "low_stock",
-        ); // simplified for demo
+        );
       }
     }
 
@@ -404,34 +404,6 @@ export default function StoreClient({
                   className="bg-sgu-navy text-white px-6 py-2.5 rounded-xl font-bold hover:bg-sgu-navy/90 transition-colors"
                 >
                   Clear all filters
-                </button>
-              </div>
-            )}
-
-            {/* Mock Pagination (Visual Only) */}
-            {filteredProducts.length > 0 && (
-              <div className="flex items-center justify-center gap-2 mt-8 pt-8 border-t border-slate-200">
-                <button
-                  className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:text-sgu-navy hover:border-slate-300 transition-colors"
-                  disabled
-                >
-                  &lt;
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-sgu-navy text-white font-bold shadow-md">
-                  1
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-sgu-navy hover:text-sgu-navy transition-colors">
-                  2
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-sgu-navy hover:text-sgu-navy transition-colors">
-                  3
-                </button>
-                <span className="text-slate-400 font-medium px-2">...</span>
-                <button className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-sgu-navy hover:text-sgu-navy transition-colors">
-                  10
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-sgu-navy hover:text-sgu-navy transition-colors">
-                  &gt;
                 </button>
               </div>
             )}

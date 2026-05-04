@@ -57,7 +57,6 @@ export default function ContactForm() {
             id="firstName"
             required
             className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sgu-turquoise/20 focus:border-sgu-turquoise transition-all"
-            placeholder="John"
           />
         </div>
 
@@ -71,7 +70,6 @@ export default function ContactForm() {
             id="lastName"
             required
             className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sgu-turquoise/20 focus:border-sgu-turquoise transition-all"
-            placeholder="Doe"
           />
         </div>
       </div>
@@ -87,7 +85,6 @@ export default function ContactForm() {
             id="email"
             required
             className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sgu-turquoise/20 focus:border-sgu-turquoise transition-all"
-            placeholder="john@example.com"
           />
         </div>
 
@@ -101,7 +98,6 @@ export default function ContactForm() {
             id="phone"
             required
             className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sgu-turquoise/20 focus:border-sgu-turquoise transition-all"
-            placeholder="+1 (555) 000-0000"
           />
         </div>
       </div>
@@ -170,7 +166,6 @@ export default function ContactForm() {
             type="text"
             id="orderNum"
             className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sgu-turquoise/20 focus:border-sgu-turquoise transition-all"
-            placeholder="#12345"
           />
         </div>
       </div>
@@ -211,7 +206,6 @@ export default function ContactForm() {
           required
           rows={5}
           className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sgu-turquoise/20 focus:border-sgu-turquoise transition-all resize-y"
-          placeholder="Please provide details..."
         />
       </div>
 

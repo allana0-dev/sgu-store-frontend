@@ -9,6 +9,8 @@ export type BackendProduct = {
   tags: string[];
   imageUrl: string | null;
   price: number;
+  rating: number | null;
+  reviewCount: number;
   inStock: boolean;
   inventory: number;
   isActive: boolean;
@@ -27,6 +29,10 @@ export type RecommendationsResponse = {
   summary: string;
   recommendations: ProductRecommendation[];
 };
+
+export function getProduct(id: string) {
+  return apiRequest<BackendProduct>(`/products/${encodeURIComponent(id)}`);
+}
 
 export function searchProducts(query: string, limit = 12, onlyInStock = false) {
   const params = new URLSearchParams({
@@ -54,6 +60,8 @@ export function mapLocalProductToBackendProduct(
     tags: product.tags || [],
     imageUrl: product.image || product.images?.[0] || null,
     price: product.pricing.salePrice ?? product.pricing.basePrice,
+    rating: null,
+    reviewCount: 0,
     inStock: product.inventoryStatus !== "out_of_stock",
     inventory,
     isActive: true,

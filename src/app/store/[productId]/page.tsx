@@ -1,11 +1,44 @@
 import { notFound } from "next/navigation";
 import homePopularProductsData from "@/data/home-popular-products.json";
 import ProductDetailClient from "@/components/store/ProductDetailClient";
+import type { Product } from "@/components/store/ProductDetailClient";
+import { getProduct, type BackendProduct } from "@/lib/products";
 
-// A mock async function to simulate fetching a product by ID
-async function getProductById(id: string) {
-  // In a real app, this would be a DB or API call
-  return homePopularProductsData.find((p) => p.id === id) || null;
+function mapBackendToProduct(p: BackendProduct): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    subtitle: p.category ?? "",
+    description: p.description ?? "",
+    images: p.imageUrl ? [p.imageUrl] : [],
+    image: p.imageUrl ?? "",
+    href: `/store/${p.id}`,
+    pricing: {
+      currency: "USD",
+      basePrice: p.price,
+      salePrice: null,
+      compareAtPrice: null,
+    },
+    inventoryStatus: p.inStock ? "in_stock" : "out_of_stock",
+    inventoryLabel: p.inStock ? "In Stock" : "Out of Stock",
+    category: p.category ?? undefined,
+    tags: p.tags,
+    rating: p.rating ?? undefined,
+    reviewCount: p.reviewCount,
+    variants: null,
+  };
+}
+
+async function getProductById(id: string): Promise<Product | null> {
+  const local = homePopularProductsData.find((p) => p.id === id);
+  if (local) return local as unknown as Product;
+
+  try {
+    const backendProduct = await getProduct(id);
+    return mapBackendToProduct(backendProduct);
+  } catch {
+    return null;
+  }
 }
 
 export default async function ProductPage({
@@ -22,14 +55,19 @@ export default async function ProductPage({
     notFound();
   }
 
-  // Find related products (just a simple mock, e.g. same department or first 4)
-  const relatedProducts = homePopularProductsData
-    .filter((p) => p.id !== productId && p.department === product.department)
+  // Find related products (same category/department, fallback to first 4)
+  const relatedProducts = (homePopularProductsData as unknown as Product[])
+    .filter(
+      (p) =>
+        p.id !== productId &&
+        (p.department ?? p.category) ===
+          (product.department ?? product.category),
+    )
     .slice(0, 4);
 
   // If not enough related, pad with others
   if (relatedProducts.length < 4) {
-    const more = homePopularProductsData
+    const more = (homePopularProductsData as unknown as Product[])
       .filter((p) => p.id !== productId && !relatedProducts.includes(p))
       .slice(0, 4 - relatedProducts.length);
     relatedProducts.push(...more);
@@ -39,12 +77,8 @@ export default async function ProductPage({
     <main className="bg-surface min-h-screen py-8">
       <div className="container-shell">
         <ProductDetailClient
-          product={
-            product as import("@/components/store/ProductDetailClient").Product
-          }
-          relatedProducts={
-            relatedProducts as import("@/components/store/ProductDetailClient").Product[]
-          }
+          product={product}
+          relatedProducts={relatedProducts}
         />
       </div>
     </main>

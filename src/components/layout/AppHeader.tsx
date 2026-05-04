@@ -9,10 +9,12 @@ import {
   FiCreditCard,
   FiChevronDown,
   FiGlobe,
+  FiHeart,
   FiMinus,
   FiLogOut,
   FiPlus,
   FiSearch,
+  FiSettings,
   FiShoppingCart,
   FiTrash2,
   FiUser,
@@ -870,6 +872,26 @@ export default function AppHeader() {
                         <span>View account details</span>
                         <FiUser aria-hidden="true" className="h-4 w-4" />
                       </Link>
+
+                      <Link
+                        href="/wishlist"
+                        className="mt-1 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-sgu-navy transition-colors hover:bg-slate-50"
+                        onClick={() => setIsAccountMenuOpen(false)}
+                      >
+                        <span>Wishlist</span>
+                        <FiHeart aria-hidden="true" className="h-4 w-4" />
+                      </Link>
+
+                      {user.role === "ADMIN" && (
+                        <Link
+                          href="/admin/products"
+                          className="mt-1 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-sgu-turquoise transition-colors hover:bg-slate-50"
+                          onClick={() => setIsAccountMenuOpen(false)}
+                        >
+                          <span>Admin — Products</span>
+                          <FiSettings aria-hidden="true" className="h-4 w-4" />
+                        </Link>
+                      )}
 
                       <div className="mt-2 rounded-lg bg-slate-50 p-3">
                         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">

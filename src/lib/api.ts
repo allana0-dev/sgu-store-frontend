@@ -1,10 +1,11 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-  "https://sgu-ecommerce-backend.onrender.com";
+  // "https://sgu-ecommerce-backend.onrender.com";
+  "http://localhost:4000";
 
 type ApiRequestOptions = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH";
   body?: unknown;
   token?: string | null;
 };
