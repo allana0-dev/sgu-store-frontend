@@ -41,6 +41,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const { items, addItem, updateQuantity, openCart } = useCart();
   const { formatPrice } = useCurrency();
   const productImage = product.image.trim() || FALLBACK_PRODUCT_IMAGE;
+  const productHref = `/store/${product.id}`;
   const cartItemKey = getCartItemKey(product.id);
   const cartQuantity =
     items.find((item) => item.key === cartItemKey)?.quantity ?? 0;
@@ -48,7 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col group h-full">
       <div className="relative mb-4">
-        <Link href={product.href} className="block">
+        <Link href={productHref} className="block">
           <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-50">
             <Image
               src={productImage}
@@ -69,7 +70,7 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="flex flex-col flex-1 px-1">
-        <Link href={product.href}>
+        <Link href={productHref}>
           <h3 className="text-[15px] font-bold text-sgu-navy line-clamp-2 mb-1 min-h-[2.6rem] leading-5">
             {product.name}
           </h3>
@@ -143,7 +144,7 @@ export default function ProductCard({ product }: { product: Product }) {
                   name: product.name,
                   subtitle: product.subtitle,
                   image: productImage,
-                  href: product.href,
+                  href: productHref,
                   pricing: product.pricing,
                   variantSelection: {},
                 });

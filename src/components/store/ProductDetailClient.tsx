@@ -768,7 +768,7 @@ export default function ProductDetailClient({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
             {relatedProducts.map((rp) => (
               <Link
-                href={rp.href}
+                href={`/store/${rp.id}`}
                 key={rp.id}
                 className="group flex flex-col bg-white rounded-2xl border border-slate-200 p-4 hover:border-sgu-turquoise transition-all hover:shadow-lg"
               >

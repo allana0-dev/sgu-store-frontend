@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import homePopularProductsData from "@/data/home-popular-products.json";
 import ProductDetailClient from "@/components/store/ProductDetailClient";
 import type { Product } from "@/components/store/ProductDetailClient";
-import { getProduct, type BackendProduct } from "@/lib/products";
+import { getProduct, listProducts, type BackendProduct } from "@/lib/products";
 
-const localProducts = homePopularProductsData as Product[];
 const FALLBACK_PRODUCT_IMAGE = "/images/heroimage.png";
 
 function mapBackendToProduct(p: BackendProduct): Product {
@@ -41,9 +39,6 @@ function mapBackendToProduct(p: BackendProduct): Product {
 }
 
 async function getProductById(id: string): Promise<Product | null> {
-  const local = localProducts.find((p) => p.id === id);
-  if (local) return local;
-
   try {
     const backendProduct = await getProduct(id);
     return mapBackendToProduct(backendProduct);
@@ -66,22 +61,30 @@ export default async function ProductPage({
     notFound();
   }
 
-  // Find related products (same category/department, fallback to first 4)
-  const relatedProducts = localProducts
-    .filter(
-      (p) =>
-        p.id !== productId &&
-        (p.department ?? p.category) ===
-          (product.department ?? product.category),
-    )
-    .slice(0, 4);
+  let relatedProducts: Product[] = [];
 
-  // If not enough related, pad with others
-  if (relatedProducts.length < 4) {
-    const more = localProducts
-      .filter((p) => p.id !== productId && !relatedProducts.includes(p))
-      .slice(0, 4 - relatedProducts.length);
-    relatedProducts.push(...more);
+  try {
+    const backendProducts = await listProducts(24);
+    const mappedProducts = backendProducts.map(mapBackendToProduct);
+    relatedProducts = mappedProducts
+      .filter(
+        (p) =>
+          p.id !== productId &&
+          (p.department ?? p.category) ===
+            (product.department ?? product.category),
+      )
+      .slice(0, 4);
+
+    if (relatedProducts.length < 4) {
+      const more = mappedProducts
+        .filter(
+          (p) => p.id !== productId && !relatedProducts.some((rp) => rp.id === p.id),
+        )
+        .slice(0, 4 - relatedProducts.length);
+      relatedProducts.push(...more);
+    }
+  } catch {
+    relatedProducts = [];
   }
 
   return (

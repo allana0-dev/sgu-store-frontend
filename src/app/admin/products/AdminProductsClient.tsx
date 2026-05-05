@@ -418,7 +418,9 @@ export default function AdminProductsClient() {
         );
         setSuccessMessage(`"${updated.name}" updated successfully.`);
       } else {
+        const productId = crypto.randomUUID();
         const payload: CreateProductPayload = {
+          id: productId,
           name: form.name,
           subtitle: form.subtitle || form.name,
           description: form.description || undefined,
@@ -426,7 +428,7 @@ export default function AdminProductsClient() {
           tags: tagsArray,
           image: primaryImage,
           images: [primaryImage],
-          href: `/store/${crypto.randomUUID()}`,
+          href: `/store/${productId}`,
           pricing: {
             currency: "USD",
             basePrice: parsedBasePrice,
