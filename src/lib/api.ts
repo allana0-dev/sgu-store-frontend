@@ -1,8 +1,12 @@
+const DEFAULT_LOCAL_API_BASE_URL = "http://localhost:4000";
+const DEFAULT_PROD_API_BASE_URL = "https://sgu-ecommerce-backend.onrender.com";
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-  // "https://sgu-ecommerce-backend.onrender.com";
-  "http://localhost:4000";
+  (process.env.NODE_ENV === "production"
+    ? DEFAULT_PROD_API_BASE_URL
+    : DEFAULT_LOCAL_API_BASE_URL);
 
 type ApiRequestOptions = {
   method?: "GET" | "POST" | "PATCH";
