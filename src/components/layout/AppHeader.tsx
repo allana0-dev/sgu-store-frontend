@@ -22,7 +22,10 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useCart } from "@/components/cart/CartProvider";
-import { CURRENCIES, useCurrency } from "@/components/currency/CurrencyProvider";
+import {
+  CURRENCIES,
+  useCurrency,
+} from "@/components/currency/CurrencyProvider";
 import {
   ACTION_NAV_ITEMS,
   CATEGORY_MENU_SECTIONS,
@@ -141,11 +144,13 @@ export default function AppHeader() {
     (typeof LANGUAGES)[number]
   >(getInitialSelectedLanguage);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const lastScrollY = useRef(0);
   const idleTimer = useRef<number | null>(null);
   const searchShellRef = useRef<HTMLDivElement | null>(null);
   const categoriesShellRef = useRef<HTMLDivElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
+  const preferencesMenuRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const isSearchRoute = pathname === "/search";
@@ -153,7 +158,10 @@ export default function AppHeader() {
   const displayedSubtotal = items.reduce(
     (total, item) =>
       total +
-      convertPrice(getCurrentPrice(item.pricing) * item.quantity, item.pricing.currency),
+      convertPrice(
+        getCurrentPrice(item.pricing) * item.quantity,
+        item.pricing.currency,
+      ),
     0,
   );
 
@@ -215,6 +223,7 @@ export default function AppHeader() {
     setIsSearchOpen(false);
     setIsCategoriesOpen(false);
     setIsAccountMenuOpen(false);
+    setIsPreferencesOpen(false);
   };
 
   useEffect(() => {
@@ -395,6 +404,30 @@ export default function AppHeader() {
   }, [isAccountMenuOpen]);
 
   useEffect(() => {
+    if (!isPreferencesOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const preferencesMenu = preferencesMenuRef.current;
+      if (!preferencesMenu) {
+        return;
+      }
+
+      const { target } = event;
+      if (target instanceof Node && !preferencesMenu.contains(target)) {
+        setIsPreferencesOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isPreferencesOpen]);
+
+  useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLanguage.code);
   }, [selectedLanguage]);
 
@@ -493,6 +526,7 @@ export default function AppHeader() {
                         setIsCategoriesOpen((previous) => !previous);
                         setIsSearchOpen(false);
                         setIsAccountMenuOpen(false);
+                        setIsPreferencesOpen(false);
                       }}
                     >
                       <span>{item.label}</span>
@@ -617,6 +651,7 @@ export default function AppHeader() {
                     setIsSearchOpen(true);
                     setIsCategoriesOpen(false);
                     setIsAccountMenuOpen(false);
+                    setIsPreferencesOpen(false);
                   }}
                 >
                   <FiSearch aria-hidden="true" className="h-4 w-4" />
@@ -806,6 +841,87 @@ export default function AppHeader() {
               </AnimatePresence>
             </div>
 
+            {!user ? (
+              <div ref={preferencesMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPreferencesOpen((previous) => !previous);
+                    setIsSearchOpen(false);
+                    setIsCategoriesOpen(false);
+                    setIsAccountMenuOpen(false);
+                  }}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                    isPreferencesOpen
+                      ? "border-sgu-navy bg-sgu-navy text-white"
+                      : "border-slate-300 text-sgu-navy hover:border-sgu-navy/50 hover:bg-slate-50"
+                  }`}
+                  aria-expanded={isPreferencesOpen}
+                  aria-label="Preferences"
+                >
+                  <FiGlobe aria-hidden="true" className="h-4 w-4" />
+                  <span className="hidden lg:inline">Preferences</span>
+                </button>
+
+                <AnimatePresence>
+                  {isPreferencesOpen ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.16 }}
+                      className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[220px] rounded-xl border border-slate-200 bg-white p-3 shadow-[0_14px_32px_rgba(15,23,42,0.16)]"
+                    >
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Currency
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {CURRENCIES.map((currency) => (
+                          <button
+                            key={currency.code}
+                            type="button"
+                            onClick={() =>
+                              setSelectedCurrencyCode(currency.code)
+                            }
+                            className={`rounded-md border px-2.5 py-1 text-xs font-bold transition-colors ${
+                              selectedCurrencyCode === currency.code
+                                ? "border-sgu-navy bg-sgu-navy text-white"
+                                : "border-slate-300 text-sgu-navy hover:bg-slate-50"
+                            }`}
+                          >
+                            {currency.code}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="mt-3">
+                        <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                          <FiGlobe aria-hidden="true" className="h-3.5 w-3.5" />
+                          Language
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {LANGUAGES.map((language) => (
+                            <button
+                              key={language.code}
+                              type="button"
+                              onClick={() => setSelectedLanguage(language)}
+                              className={`rounded-md border px-2.5 py-1 text-xs font-bold transition-colors ${
+                                selectedLanguage.code === language.code
+                                  ? "border-sgu-navy bg-sgu-navy text-white"
+                                  : "border-slate-300 text-sgu-navy hover:bg-slate-50"
+                              }`}
+                            >
+                              {language.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+            ) : null}
+
             {user ? (
               <div ref={accountMenuRef} className="relative">
                 <button
@@ -814,6 +930,7 @@ export default function AppHeader() {
                     setIsAccountMenuOpen((previous) => !previous);
                     setIsSearchOpen(false);
                     setIsCategoriesOpen(false);
+                    setIsPreferencesOpen(false);
                   }}
                   className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-sgu-navy transition-colors hover:border-sgu-navy/50 hover:bg-slate-50"
                   aria-expanded={isAccountMenuOpen}
