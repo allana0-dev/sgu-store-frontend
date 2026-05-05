@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FiAlertCircle, FiCheckCircle, FiSearch } from "react-icons/fi";
+import { useCurrency } from "@/components/currency/CurrencyProvider";
 import {
   searchLocalProducts,
   searchProducts,
@@ -11,13 +12,6 @@ import {
 } from "@/lib/products";
 import type { Product } from "@/components/store/ProductDetailClient";
 import homePopularProductsData from "@/data/home-popular-products.json";
-
-const formatPrice = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(amount);
 
 const getProductHref = (id: string) => `/store/${id}`;
 
@@ -38,7 +32,13 @@ const mergeProducts = <T extends BackendProduct>(
   return Array.from(productMap.values());
 };
 
-function ProductResultCard({ product }: { product: BackendProduct }) {
+function ProductResultCard({
+  product,
+  formatPrice,
+}: {
+  product: BackendProduct;
+  formatPrice: (amount: number, sourceCurrency?: string) => string;
+}) {
   return (
     <Link
       href={getProductHref(product.id)}
@@ -71,7 +71,7 @@ function ProductResultCard({ product }: { product: BackendProduct }) {
         </p>
         <div className="mt-auto pt-4">
           <p className="text-xl font-black text-sgu-navy">
-            {formatPrice(product.price)}
+            {formatPrice(product.price, "USD")}
           </p>
           <p
             className={`mt-1 inline-flex items-center gap-1.5 text-xs font-bold ${
@@ -92,6 +92,7 @@ export default function SearchClient({
 }: {
   initialQuery: string;
 }) {
+  const { formatPrice } = useCurrency();
   const [query, setQuery] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [onlyInStock, setOnlyInStock] = useState(true);
@@ -229,7 +230,11 @@ export default function SearchClient({
             ) : (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {results.map((product) => (
-                  <ProductResultCard key={product.id} product={product} />
+                  <ProductResultCard
+                    key={product.id}
+                    product={product}
+                    formatPrice={formatPrice}
+                  />
                 ))}
               </div>
             )}

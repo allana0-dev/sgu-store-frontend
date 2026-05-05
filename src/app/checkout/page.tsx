@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useCart } from "@/components/cart/CartProvider";
+import { useCurrency } from "@/components/currency/CurrencyProvider";
 import { authRequest } from "@/lib/auth";
 import { getCurrentPrice, getVariantSummary } from "@/lib/cart";
 
@@ -17,25 +18,19 @@ type SubmittedOrder = {
     productName: string;
     productImageUrl?: string;
     unitPrice: number;
+    currency: string;
     quantity: number;
   }[];
-  subtotal: number;
   fulfillmentMethod: FulfillmentMethod;
   paymentMethod: PaymentMethod;
   contactPhone: string;
   notes: string;
 };
 
-const formatPrice = (amount: number, currency = "USD") =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
-
 export default function CheckoutPage() {
-  const { items, subtotal, clearCart } = useCart();
+  const { items, clearCart } = useCart();
   const { token, user } = useAuth();
+  const { convertPrice, formatPrice, formatSelectedAmount } = useCurrency();
   const [fulfillmentMethod, setFulfillmentMethod] =
     useState<FulfillmentMethod>("PICKUP");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CARD");
@@ -54,7 +49,6 @@ export default function CheckoutPage() {
     null,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const currency = items[0]?.pricing.currency ?? "USD";
   const cardLast4 = cardNumber.replace(/\D/g, "").slice(-4);
   const guestEmailTrimmed = guestEmail.trim();
   const guestEmailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
@@ -72,9 +66,36 @@ export default function CheckoutPage() {
         productName: item.name,
         productImageUrl: item.image,
         unitPrice: getCurrentPrice(item.pricing),
+        currency: item.pricing.currency,
         quantity: item.quantity,
       })),
     [items],
+  );
+  const checkoutItemsPayload = useMemo(
+    () =>
+      orderItems.map(
+        ({ productId, productName, productImageUrl, unitPrice, quantity }) => ({
+          productId,
+          productName,
+          productImageUrl,
+          unitPrice,
+          quantity,
+        }),
+      ),
+    [orderItems],
+  );
+  const displayedSubtotal = useMemo(
+    () =>
+      items.reduce(
+        (total, item) =>
+          total +
+          convertPrice(
+            getCurrentPrice(item.pricing) * item.quantity,
+            item.pricing.currency,
+          ),
+        0,
+      ),
+    [convertPrice, items],
   );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -122,12 +143,12 @@ export default function CheckoutPage() {
         body: token
           ? {
               ...checkoutDetails,
-              items: orderItems,
+              items: checkoutItemsPayload,
             }
           : {
               email: guestEmailTrimmed,
               ...checkoutDetails,
-              items: orderItems,
+              items: checkoutItemsPayload,
             },
       });
       const usedReceiptEmail = response.receiptEmail ?? receiptEmail;
@@ -137,7 +158,6 @@ export default function CheckoutPage() {
         id: response.order.id,
         receiptEmail: usedReceiptEmail,
         items: orderItems,
-        subtotal,
         fulfillmentMethod,
         paymentMethod,
         contactPhone,
@@ -210,14 +230,26 @@ export default function CheckoutPage() {
                       {item.productName} × {item.quantity}
                     </p>
                     <p className="font-bold text-sgu-navy">
-                      {formatPrice(item.unitPrice * item.quantity, currency)}
+                      {formatPrice(item.unitPrice * item.quantity, item.currency)}
                     </p>
                   </div>
                 ))}
               </div>
               <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4 text-base font-black text-sgu-navy">
                 <span>Total</span>
-                <span>{formatPrice(submittedOrder.subtotal, currency)}</span>
+                <span>
+                  {formatSelectedAmount(
+                    submittedOrder.items.reduce(
+                      (total, item) =>
+                        total +
+                        convertPrice(
+                          item.unitPrice * item.quantity,
+                          item.currency,
+                        ),
+                      0,
+                    ),
+                  )}
+                </span>
               </div>
             </div>
 
@@ -506,7 +538,7 @@ export default function CheckoutPage() {
 
             <div className="mt-5 flex items-center justify-between text-lg font-black text-sgu-navy">
               <span>Total</span>
-              <span>{formatPrice(subtotal, currency)}</span>
+              <span>{formatSelectedAmount(displayedSubtotal)}</span>
             </div>
 
             {user ? (

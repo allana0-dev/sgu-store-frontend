@@ -11,6 +11,7 @@ import {
   FiRefreshCw,
   FiSave,
   FiSearch,
+  FiUsers,
   FiX,
   FiXCircle,
 } from "react-icons/fi";
@@ -23,6 +24,12 @@ import {
   type CreateProductPayload,
   type UpdateProductPayload,
 } from "@/lib/admin-products";
+import {
+  listAdminUsers,
+  updateUserRole,
+  type AdminUser,
+  type UserRole,
+} from "@/lib/admin-users";
 
 const EMPTY_FORM = {
   name: "",
@@ -104,11 +111,20 @@ const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-sgu-navy placeholder:text-slate-400 focus:border-sgu-turquoise focus:outline-none transition-colors";
 
 export default function AdminProductsClient() {
-  const { user, token, isLoading: authLoading } = useAuth();
+  const { token } = useAuth();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersLoadError, setUsersLoadError] = useState<string | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [roleDraftById, setRoleDraftById] = useState<Record<number, UserRole>>(
+    {},
+  );
+  const [savingRoleUserId, setSavingRoleUserId] = useState<number | null>(null);
+  const [userSaveError, setUserSaveError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -121,7 +137,7 @@ export default function AdminProductsClient() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const data = await listAdminProducts(200);
+      const data = await listAdminProducts(200, token);
       setProducts(data);
     } catch (err) {
       setLoadError(
@@ -130,15 +146,35 @@ export default function AdminProductsClient() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
+
+  const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
+    setUsersLoadError(null);
+    setUserSaveError(null);
+    try {
+      const data = await listAdminUsers(250, token);
+      setUsers(data);
+      setRoleDraftById(
+        Object.fromEntries(data.map((entry) => [entry.id, entry.role])),
+      );
+    } catch (err) {
+      setUsersLoadError(
+        err instanceof Error ? err.message : "Failed to load users.",
+      );
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    if (!authLoading && user?.role === "ADMIN") {
+    const timer = window.setTimeout(() => {
       void loadProducts();
-    } else if (!authLoading) {
-      setIsLoading(false);
-    }
-  }, [authLoading, user, loadProducts]);
+      void loadUsers();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadProducts, loadUsers]);
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -186,7 +222,6 @@ export default function AdminProductsClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
     setSaving(true);
     setSaveError(null);
 
@@ -260,34 +295,56 @@ export default function AdminProductsClient() {
   const activeCount = products.filter((p) => p.isActive).length;
   const inStockCount = products.filter((p) => p.inStock).length;
   const outOfStockCount = products.filter((p) => !p.inStock).length;
-
-  if (authLoading) {
+  const filteredUsers = users.filter((entry) => {
+    if (!userSearchQuery) return true;
+    const query = userSearchQuery.toLowerCase();
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm font-semibold text-slate-500">
-          Checking permissions…
-        </p>
-      </div>
+      String(entry.id).includes(query) ||
+      entry.fullName.toLowerCase().includes(query) ||
+      entry.email.toLowerCase().includes(query) ||
+      entry.role.toLowerCase().includes(query)
     );
-  }
+  });
+  const totalUsers = users.length;
+  const adminUsersCount = users.filter((entry) => entry.role === "ADMIN").length;
+  const customerUsersCount = users.filter(
+    (entry) => entry.role === "CUSTOMER",
+  ).length;
+  const isRefreshing = isLoading || usersLoading;
 
-  if (!user || user.role !== "ADMIN") {
-    return (
-      <div className="container-shell py-20 text-center">
-        <div className="card-surface mx-auto max-w-md p-10">
-          <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-sgu-red">
-            <FiXCircle className="h-7 w-7" />
-          </div>
-          <h1 className="mt-5 text-2xl font-bold text-sgu-navy">
-            Access Denied
-          </h1>
-          <p className="mt-3 text-sm text-slate-500">
-            This page is restricted to administrators.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const handleRefreshAll = async () => {
+    await Promise.all([loadProducts(), loadUsers()]);
+  };
+
+  const handleRoleDraftChange = (id: number, nextRole: UserRole) => {
+    setRoleDraftById((previous) => ({ ...previous, [id]: nextRole }));
+    setUserSaveError(null);
+  };
+
+  const handleRoleSave = async (entry: AdminUser) => {
+    const nextRole = roleDraftById[entry.id];
+    if (!nextRole || nextRole === entry.role) return;
+
+    setSavingRoleUserId(entry.id);
+    setUserSaveError(null);
+    try {
+      const updated = await updateUserRole(entry.id, nextRole, token);
+      setUsers((previous) =>
+        previous.map((existing) =>
+          existing.id === updated.id ? { ...existing, ...updated } : existing,
+        ),
+      );
+      setRoleDraftById((previous) => ({ ...previous, [updated.id]: updated.role }));
+      setSuccessMessage(`Role updated: ${updated.fullName} is now ${updated.role}.`);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (error) {
+      setUserSaveError(
+        error instanceof Error ? error.message : "Failed to update role.",
+      );
+    } finally {
+      setSavingRoleUserId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-surface pb-16">
@@ -298,19 +355,24 @@ export default function AdminProductsClient() {
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-sgu-turquoise">
               Admin
             </p>
-            <h1 className="mt-1 text-3xl font-bold text-sgu-navy">Products</h1>
+            <h1 className="mt-1 text-3xl font-bold text-sgu-navy">
+              Products & Users
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              School project mode: this page can be used without logging in.
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => void loadProducts()}
-              disabled={isLoading}
+              onClick={() => void handleRefreshAll()}
+              disabled={isRefreshing}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-sgu-navy transition-colors hover:border-sgu-navy disabled:opacity-50"
             >
               <FiRefreshCw
-                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
               />
-              Refresh
+              Refresh All
             </button>
             <button
               type="button"
@@ -544,6 +606,206 @@ export default function AdminProductsClient() {
               <p className="text-xs text-slate-400">
                 {filtered.length} of {totalCount} product
                 {totalCount !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Users */}
+        <div className="mb-8 mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-sgu-turquoise">
+              User Management
+            </p>
+            <h2 className="mt-1 text-2xl font-bold text-sgu-navy">Users</h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadUsers()}
+            disabled={usersLoading}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-sgu-navy transition-colors hover:border-sgu-navy disabled:opacity-50"
+          >
+            <FiRefreshCw
+              className={`h-4 w-4 ${usersLoading ? "animate-spin" : ""}`}
+            />
+            Refresh Users
+          </button>
+        </div>
+
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            {
+              label: "Total Users",
+              value: totalUsers,
+              color: "text-sgu-navy",
+            },
+            {
+              label: "Admins",
+              value: adminUsersCount,
+              color: "text-emerald-600",
+            },
+            {
+              label: "Customers",
+              value: customerUsersCount,
+              color: "text-sgu-turquoise",
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="card-surface p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                {stat.label}
+              </p>
+              <p className={`mt-1 text-2xl font-black ${stat.color}`}>
+                {stat.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-4 flex items-center gap-3">
+          <div className="relative max-w-sm flex-1">
+            <FiSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by ID, name, email, or role…"
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm focus:border-sgu-turquoise focus:outline-none"
+            />
+          </div>
+          {userSearchQuery && (
+            <p className="text-sm text-slate-500">
+              {filteredUsers.length} result{filteredUsers.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+
+        {userSaveError && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-sgu-red">
+            <FiAlertTriangle className="h-4 w-4 shrink-0" />
+            {userSaveError}
+          </div>
+        )}
+
+        {usersLoading ? (
+          <div className="flex min-h-[24vh] items-center justify-center">
+            <p className="text-sm font-semibold text-slate-500">Loading users…</p>
+          </div>
+        ) : usersLoadError ? (
+          <div className="card-surface p-10 text-center">
+            <FiAlertTriangle className="mx-auto h-10 w-10 text-sgu-red" />
+            <p className="mt-3 text-sm font-semibold text-sgu-red">
+              {usersLoadError}
+            </p>
+            <button
+              type="button"
+              onClick={() => void loadUsers()}
+              className="button-primary mt-4 rounded-xl px-4 py-2 text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="card-surface p-12 text-center">
+            <FiUsers className="mx-auto h-12 w-12 text-slate-200" />
+            <p className="mt-4 text-lg font-bold text-sgu-navy">
+              {userSearchQuery ? "No users match your search" : "No users yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="card-surface overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    {[
+                      "Name",
+                      "Email",
+                      "ID",
+                      "Current Role",
+                      "New Role",
+                      "Updated",
+                      "Actions",
+                    ].map((label) => (
+                      <th
+                        key={label}
+                        className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-400"
+                      >
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredUsers.map((entry) => {
+                    const draftRole = roleDraftById[entry.id] ?? entry.role;
+                    const roleChanged = draftRole !== entry.role;
+                    const isSaving = savingRoleUserId === entry.id;
+
+                    return (
+                      <tr key={entry.id} className="transition-colors hover:bg-slate-50">
+                        <td className="px-4 py-3 font-semibold text-sgu-navy">
+                          {entry.fullName}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{entry.email}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-slate-400">
+                          {entry.id}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                              entry.role === "ADMIN"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {entry.role}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={draftRole}
+                            onChange={(e) =>
+                              handleRoleDraftChange(entry.id, e.target.value as UserRole)
+                            }
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-sgu-navy focus:border-sgu-turquoise focus:outline-none"
+                          >
+                            <option value="CUSTOMER">CUSTOMER</option>
+                            <option value="ADMIN">ADMIN</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-500">
+                          {new Date(entry.updatedAt).toLocaleDateString("en-US")}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => void handleRoleSave(entry)}
+                            disabled={!roleChanged || isSaving}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-sgu-navy transition-colors hover:border-sgu-navy disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isSaving ? (
+                              <>
+                                <FiRefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                Saving
+                              </>
+                            ) : (
+                              <>
+                                <FiSave className="h-3.5 w-3.5" />
+                                Save Role
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t border-slate-100 px-4 py-3">
+              <p className="text-xs text-slate-400">
+                {filteredUsers.length} of {totalUsers} user
+                {totalUsers !== 1 ? "s" : ""}
               </p>
             </div>
           </div>

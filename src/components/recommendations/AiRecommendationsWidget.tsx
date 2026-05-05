@@ -9,6 +9,7 @@ import {
   FiX,
   FiZap,
 } from "react-icons/fi";
+import { useCurrency } from "@/components/currency/CurrencyProvider";
 import type { Product } from "@/components/store/ProductDetailClient";
 import homePopularProductsData from "@/data/home-popular-products.json";
 import {
@@ -20,13 +21,6 @@ import {
 } from "@/lib/products";
 
 const localProducts = homePopularProductsData as Product[];
-
-const formatPrice = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(amount);
 
 const getProductHref = (id: string) => `/store/${id}`;
 
@@ -46,6 +40,8 @@ const mergeProducts = <T extends BackendProduct>(
 };
 
 function RecommendationCard({ product }: { product: ProductRecommendation }) {
+  const { formatPrice } = useCurrency();
+
   return (
     <div className="rounded-2xl border border-sgu-turquoise/20 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -58,7 +54,7 @@ function RecommendationCard({ product }: { product: ProductRecommendation }) {
           </h3>
         </div>
         <p className="shrink-0 text-sm font-black text-sgu-navy">
-          {formatPrice(product.price)}
+          {formatPrice(product.price, "USD")}
         </p>
       </div>
       <p className="mt-3 rounded-xl bg-sgu-turquoise/10 p-3 text-xs font-medium text-sgu-navy">

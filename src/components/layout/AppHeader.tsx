@@ -22,6 +22,7 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useCart } from "@/components/cart/CartProvider";
+import { CURRENCIES, useCurrency } from "@/components/currency/CurrencyProvider";
 import {
   ACTION_NAV_ITEMS,
   CATEGORY_MENU_SECTIONS,
@@ -39,14 +40,8 @@ import homePopularProductsData from "@/data/home-popular-products.json";
 const SCROLL_HIDE_THRESHOLD = 12;
 const SCROLL_IDLE_MS = 220;
 const RECENT_SEARCHES_STORAGE_KEY = "sgu-recent-searches";
-const CURRENCY_STORAGE_KEY = "sgu-selected-currency";
 const LANGUAGE_STORAGE_KEY = "sgu-selected-language";
 const MAX_RECENT_SEARCHES = 6;
-
-const CURRENCIES = [
-  { code: "USD", symbol: "$", label: "US Dollar" },
-  { code: "XCD", symbol: "EC$", label: "East Caribbean Dollar" },
-] as const;
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -85,17 +80,6 @@ const ACTION_ICONS = {
   "/account": FiUser,
 } as const;
 
-const getInitialSelectedCurrency = (): (typeof CURRENCIES)[number] => {
-  if (typeof window === "undefined") {
-    return CURRENCIES[0];
-  }
-
-  const storedCode = window.localStorage.getItem(CURRENCY_STORAGE_KEY);
-  return (
-    CURRENCIES.find((currency) => currency.code === storedCode) ?? CURRENCIES[0]
-  );
-};
-
 const getInitialSelectedLanguage = (): (typeof LANGUAGES)[number] => {
   if (typeof window === "undefined") {
     return LANGUAGES[0];
@@ -125,9 +109,15 @@ export default function AppHeader() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const {
+    selectedCurrencyCode,
+    setSelectedCurrencyCode,
+    convertPrice,
+    formatPrice,
+    formatSelectedAmount,
+  } = useCurrency();
+  const {
     items,
     itemCount,
-    subtotal,
     isCartOpen,
     openCart,
     closeCart,
@@ -147,9 +137,6 @@ export default function AppHeader() {
   const [recentSearches, setRecentSearches] = useState<string[]>(
     getInitialRecentSearches,
   );
-  const [selectedCurrency, setSelectedCurrency] = useState<
-    (typeof CURRENCIES)[number]
-  >(getInitialSelectedCurrency);
   const [selectedLanguage, setSelectedLanguage] = useState<
     (typeof LANGUAGES)[number]
   >(getInitialSelectedLanguage);
@@ -163,7 +150,12 @@ export default function AppHeader() {
 
   const isSearchRoute = pathname === "/search";
   const isCategoriesRoute = pathname === "/categories" || pathname === "/store";
-  const subtotalCurrency = items[0]?.pricing.currency ?? selectedCurrency.code;
+  const displayedSubtotal = items.reduce(
+    (total, item) =>
+      total +
+      convertPrice(getCurrentPrice(item.pricing) * item.quantity, item.pricing.currency),
+    0,
+  );
 
   const persistRecentSearch = (rawValue: string) => {
     const value = rawValue.trim();
@@ -218,13 +210,6 @@ export default function AppHeader() {
     setIsAccountMenuOpen(false);
     router.push("/account");
   };
-
-  const formatPrice = (amount: number, currency: string) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-    }).format(amount);
 
   const closeDesktopMenus = () => {
     setIsSearchOpen(false);
@@ -408,10 +393,6 @@ export default function AppHeader() {
       document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [isAccountMenuOpen]);
-
-  useEffect(() => {
-    window.localStorage.setItem(CURRENCY_STORAGE_KEY, selectedCurrency.code);
-  }, [selectedCurrency]);
 
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLanguage.code);
@@ -884,11 +865,11 @@ export default function AppHeader() {
 
                       {user.role === "ADMIN" && (
                         <Link
-                          href="/admin/products"
+                          href="/admin"
                           className="mt-1 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-sgu-turquoise transition-colors hover:bg-slate-50"
                           onClick={() => setIsAccountMenuOpen(false)}
                         >
-                          <span>Admin — Products</span>
+                          <span>Admin — Products & Users</span>
                           <FiSettings aria-hidden="true" className="h-4 w-4" />
                         </Link>
                       )}
@@ -907,9 +888,11 @@ export default function AppHeader() {
                               <button
                                 key={currency.code}
                                 type="button"
-                                onClick={() => setSelectedCurrency(currency)}
+                                onClick={() =>
+                                  setSelectedCurrencyCode(currency.code)
+                                }
                                 className={`rounded-md border px-2.5 py-1 text-xs font-bold transition-colors ${
-                                  selectedCurrency.code === currency.code
+                                  selectedCurrencyCode === currency.code
                                     ? "border-sgu-navy bg-sgu-navy text-white"
                                     : "border-slate-300 text-sgu-navy hover:bg-white"
                                 }`}
@@ -1156,7 +1139,7 @@ export default function AppHeader() {
                         Subtotal
                       </span>
                       <span className="text-lg font-black text-sgu-navy">
-                        {formatPrice(subtotal, subtotalCurrency)}
+                        {formatSelectedAmount(displayedSubtotal)}
                       </span>
                     </div>
                     <Link
@@ -1336,9 +1319,9 @@ export default function AppHeader() {
                 {CURRENCIES.map((currency) => (
                   <button
                     key={currency.code}
-                    onClick={() => setSelectedCurrency(currency)}
+                    onClick={() => setSelectedCurrencyCode(currency.code)}
                     className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
-                      selectedCurrency.code === currency.code
+                      selectedCurrencyCode === currency.code
                         ? "border-sgu-navy bg-sgu-navy text-white"
                         : "border-slate-300 text-sgu-navy hover:bg-slate-50"
                     }`}

@@ -8,6 +8,7 @@ import {
   FiPlus,
 } from "react-icons/fi";
 import { useCart } from "@/components/cart/CartProvider";
+import { useCurrency } from "@/components/currency/CurrencyProvider";
 import WishlistHeartButton from "@/components/wishlist/WishlistHeartButton";
 import { getCartItemKey } from "@/lib/cart";
 import type { ProductPricing, Product } from "./ProductDetailClient";
@@ -24,13 +25,6 @@ export type MinimalProduct = Pick<
   | "inventoryLabel"
 >;
 
-const formatPrice = (amount: number, currency: string) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
-
 const getCurrentPrice = (pricing: ProductPricing) =>
   pricing.salePrice ?? pricing.basePrice;
 
@@ -43,6 +37,7 @@ const isDiscounted = (pricing: ProductPricing) => {
 
 export default function ProductCard({ product }: { product: Product }) {
   const { items, addItem, updateQuantity, openCart } = useCart();
+  const { formatPrice } = useCurrency();
   const cartItemKey = getCartItemKey(product.id);
   const cartQuantity =
     items.find((item) => item.key === cartItemKey)?.quantity ?? 0;

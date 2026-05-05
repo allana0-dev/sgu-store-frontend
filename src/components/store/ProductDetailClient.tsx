@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 import { useCart } from "@/components/cart/CartProvider";
+import { useCurrency } from "@/components/currency/CurrencyProvider";
 import WishlistHeartButton from "@/components/wishlist/WishlistHeartButton";
 import { getCartItemKey } from "@/lib/cart";
 import {
@@ -51,13 +52,6 @@ export type Product = {
   reviewCount?: number;
   variants?: ProductVariant[] | null;
 };
-
-const formatPrice = (amount: number, currency: string) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
 
 const getCurrentPrice = (pricing: ProductPricing) =>
   pricing.salePrice ?? pricing.basePrice;
@@ -100,6 +94,7 @@ export default function ProductDetailClient({
   relatedProducts: Product[];
 }) {
   const { items, addItem, updateQuantity, openCart } = useCart();
+  const { formatPrice } = useCurrency();
   const [activeImage, setActiveImage] = useState(product.image);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<

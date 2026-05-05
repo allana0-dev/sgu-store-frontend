@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { CurrencyProvider } from "@/components/currency/CurrencyProvider";
 import AppFooter from "@/components/layout/AppFooter";
 import AppHeader from "@/components/layout/AppHeader";
 import AiRecommendationsWidget from "@/components/recommendations/AiRecommendationsWidget";
@@ -29,14 +30,18 @@ export default function RootLayout({
     <html lang="en" className={`${montserrat.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AuthProvider>
-          <WishlistProvider>
-            <CartProvider>
-              <AppHeader />
-              <main className="flex-1 pt-(--app-header-height)">{children}</main>
-              <AiRecommendationsWidget />
-              <AppFooter />
-            </CartProvider>
-          </WishlistProvider>
+          <CurrencyProvider>
+            <WishlistProvider>
+              <CartProvider>
+                <AppHeader />
+                <main className="flex-1 pt-(--app-header-height)">
+                  {children}
+                </main>
+                <AiRecommendationsWidget />
+                <AppFooter />
+              </CartProvider>
+            </WishlistProvider>
+          </CurrencyProvider>
         </AuthProvider>
       </body>
     </html>

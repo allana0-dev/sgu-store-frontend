@@ -45,11 +45,16 @@ export type UpdateProductPayload = {
   isActive?: boolean;
 };
 
-export function listAdminProducts(limit = 200) {
-  return apiRequest<AdminProduct[]>(`/products?limit=${limit}`);
+export function listAdminProducts(limit = 200, token?: string | null) {
+  return apiRequest<AdminProduct[]>(`/products?limit=${limit}`, {
+    token,
+  });
 }
 
-export function createProduct(token: string, payload: CreateProductPayload) {
+export function createProduct(
+  token: string | null | undefined,
+  payload: CreateProductPayload,
+) {
   return apiRequest<AdminProduct>("/products", {
     method: "POST",
     body: payload,
@@ -58,7 +63,7 @@ export function createProduct(token: string, payload: CreateProductPayload) {
 }
 
 export function updateProduct(
-  token: string,
+  token: string | null | undefined,
   id: string,
   payload: UpdateProductPayload,
 ) {

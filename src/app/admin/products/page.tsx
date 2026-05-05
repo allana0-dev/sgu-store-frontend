@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import AdminProductsClient from "./AdminProductsClient";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Admin — Products | SGU Campus Store",
-};
-
-export default function AdminProductsPage() {
-  return <AdminProductsClient />;
+export default function AdminProductsPageRedirect() {
+  redirect("/admin");
 }
