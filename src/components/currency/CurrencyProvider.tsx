@@ -30,18 +30,17 @@ const CurrencyContext = createContext<CurrencyContextValue | undefined>(
   undefined,
 );
 
-const getInitialSelectedCurrencyCode = (): SupportedCurrencyCode => {
-  if (typeof window === "undefined") {
-    return DEFAULT_CURRENCY;
-  }
-
-  const storedCode = window.localStorage.getItem(CURRENCY_STORAGE_KEY);
-  return normalizeCurrencyCode(storedCode ?? undefined);
-};
-
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [selectedCurrencyCode, setSelectedCurrencyCode] =
-    useState<SupportedCurrencyCode>(getInitialSelectedCurrencyCode);
+    useState<SupportedCurrencyCode>(DEFAULT_CURRENCY);
+
+  useEffect(() => {
+    const storedCode = window.localStorage.getItem(CURRENCY_STORAGE_KEY);
+    const code = normalizeCurrencyCode(storedCode ?? undefined);
+    if (code !== DEFAULT_CURRENCY) {
+      setSelectedCurrencyCode(code);
+    }
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem(CURRENCY_STORAGE_KEY, selectedCurrencyCode);
@@ -70,7 +69,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   }, [selectedCurrencyCode]);
 
   return (
-    <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
+    <CurrencyContext.Provider value={value}>
+      {children}
+    </CurrencyContext.Provider>
   );
 }
 

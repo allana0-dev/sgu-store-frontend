@@ -125,6 +125,7 @@ export default function StoreClient({
 
   const activeFilterCount =
     selectedCategories.length + selectedRatings.length + availability.length;
+  const visibleStart = filteredProducts.length > 0 ? 1 : 0;
 
   return (
     <div className="flex flex-col min-h-screen bg-surface">
@@ -290,7 +291,7 @@ export default function StoreClient({
               <p className="text-sm text-slate-500 font-medium">
                 Showing{" "}
                 <span className="font-bold text-sgu-navy">
-                  1-{filteredProducts.length}
+                  {visibleStart}-{filteredProducts.length}
                 </span>{" "}
                 of{" "}
                 <span className="font-bold text-sgu-navy">

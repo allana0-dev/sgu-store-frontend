@@ -23,6 +23,10 @@ import {
 const localProducts = homePopularProductsData as Product[];
 
 const getProductHref = (id: string) => `/store/${id}`;
+const getDisplayPrice = (product: BackendProduct) =>
+  product.pricing.salePrice ?? product.pricing.basePrice;
+const isInStock = (product: BackendProduct) =>
+  product.inventoryStatus !== "out_of_stock";
 
 const mergeProducts = <T extends BackendProduct>(
   primaryProducts: T[],
@@ -54,7 +58,7 @@ function RecommendationCard({ product }: { product: ProductRecommendation }) {
           </h3>
         </div>
         <p className="shrink-0 text-sm font-black text-sgu-navy">
-          {formatPrice(product.price, "USD")}
+          {formatPrice(getDisplayPrice(product), product.pricing.currency)}
         </p>
       </div>
       <p className="mt-3 rounded-xl bg-sgu-turquoise/10 p-3 text-xs font-medium text-sgu-navy">
@@ -63,11 +67,11 @@ function RecommendationCard({ product }: { product: ProductRecommendation }) {
       <div className="mt-3 flex items-center justify-between gap-3 text-xs">
         <span
           className={`inline-flex items-center gap-1.5 font-bold ${
-            product.inStock ? "text-emerald-600" : "text-slate-400"
+            isInStock(product) ? "text-emerald-600" : "text-slate-400"
           }`}
         >
           <FiCheckCircle className="h-3.5 w-3.5" />
-          {product.inStock ? "In stock" : "Out of stock"}
+          {isInStock(product) ? "In stock" : "Out of stock"}
         </span>
         <Link
           href={getProductHref(product.id)}
@@ -152,26 +156,42 @@ export default function AiRecommendationsWidget() {
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {isOpen ? (
-        <div className="w-[calc(100vw-2.5rem)] max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="flex items-start justify-between gap-4 bg-sgu-navy p-5 text-white">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-                <FiZap className="h-5 w-5" />
+        <div className="w-[calc(100vw-2.5rem)] max-w-md overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.25)]">
+          <div className="relative flex items-start justify-between gap-4 overflow-hidden bg-gradient-to-r from-sgu-navy via-sgu-navy to-[#243886] p-5 text-white">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-7 -top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-8 -bottom-10 h-20 w-20 rounded-full bg-sgu-turquoise/30 blur-2xl"
+            />
+
+            <div className="relative flex items-start gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 shadow-inner shadow-white/10">
+                <FiZap className="h-5 w-5 text-sgu-light-turquoise" />
               </div>
+
               <div>
-                <h2 className="text-base font-black">AI Recommendations</h2>
-                <p className="mt-1 text-xs font-medium text-white/75">
+                <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold tracking-[0.08em] uppercase text-white/90">
+                  Smart Assistant
+                </span>
+                <h2 className="mt-2 text-base font-black leading-tight">
+                  AI Recommendations
+                </h2>
+                <p className="mt-1.5 max-w-[250px] text-xs font-medium leading-relaxed text-white/85">
                   Describe what you need and I’ll suggest SGU store items.
                 </p>
               </div>
             </div>
+
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="rounded-full p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              className="relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/85 backdrop-blur transition-all hover:bg-white/20 hover:text-white"
               aria-label="Close AI recommendations"
             >
-              <FiX className="h-5 w-5" />
+              <FiX className="h-4 w-4" />
             </button>
           </div>
 

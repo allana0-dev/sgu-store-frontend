@@ -27,10 +27,15 @@ import {
   useCurrency,
 } from "@/components/currency/CurrencyProvider";
 import {
+  LANGUAGES,
+  useLanguage,
+} from "@/components/language/LanguageProvider";
+import {
   ACTION_NAV_ITEMS,
   CATEGORY_MENU_SECTIONS,
   PRIMARY_NAV_ITEMS,
 } from "@/config/navigation";
+import type { TranslationKey } from "@/lib/i18n";
 import { getCurrentPrice, getVariantSummary } from "@/lib/cart";
 import {
   searchLocalProducts,
@@ -43,13 +48,7 @@ import homePopularProductsData from "@/data/home-popular-products.json";
 const SCROLL_HIDE_THRESHOLD = 12;
 const SCROLL_IDLE_MS = 220;
 const RECENT_SEARCHES_STORAGE_KEY = "sgu-recent-searches";
-const LANGUAGE_STORAGE_KEY = "sgu-selected-language";
 const MAX_RECENT_SEARCHES = 6;
-
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "es", label: "Spanish" },
-] as const;
 
 const getInitialRecentSearches = (): string[] => {
   if (typeof window === "undefined") {
@@ -83,15 +82,44 @@ const ACTION_ICONS = {
   "/account": FiUser,
 } as const;
 
-const getInitialSelectedLanguage = (): (typeof LANGUAGES)[number] => {
-  if (typeof window === "undefined") {
-    return LANGUAGES[0];
-  }
+const PRIMARY_NAV_LABELS: Record<string, TranslationKey> = {
+  "/": "nav.home",
+  "/store": "nav.store",
+  "/categories": "nav.categories",
+  "/contact-us": "nav.contactUs",
+};
 
-  const storedCode = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return (
-    LANGUAGES.find((language) => language.code === storedCode) ?? LANGUAGES[0]
-  );
+const ACTION_NAV_LABELS: Record<string, TranslationKey> = {
+  "/search": "header.searchLabel",
+  "/account": "header.signIn",
+  "/cart": "header.cart",
+};
+
+const CATEGORY_SECTION_LABELS: Record<string, TranslationKey> = {
+  General: "nav.general",
+  "By Store": "nav.byStore",
+};
+
+const CATEGORY_ITEM_LABELS: Record<string, TranslationKey> = {
+  "/store?category=new-arrivals": "nav.newArrivals",
+  "/store?category=apparel": "nav.apparel",
+  "/store?category=supplies": "nav.supplies",
+  "/store?category=gifts": "nav.gifts",
+  "/store?store=som": "nav.schoolOfMedicine",
+  "/store?store=svm": "nav.schoolOfVeterinaryMedicine",
+  "/store?store=campus-living": "nav.campusLiving",
+  "/store?store=sgu-essentials": "nav.sguEssentials",
+};
+
+const CATEGORY_ITEM_DESCRIPTIONS: Record<string, TranslationKey> = {
+  "/store?category=new-arrivals": "nav.newArrivalsDescription",
+  "/store?category=apparel": "nav.apparelDescription",
+  "/store?category=supplies": "nav.suppliesDescription",
+  "/store?category=gifts": "nav.giftsDescription",
+  "/store?store=som": "nav.schoolOfMedicineDescription",
+  "/store?store=svm": "nav.schoolOfVeterinaryMedicineDescription",
+  "/store?store=campus-living": "nav.campusLivingDescription",
+  "/store?store=sgu-essentials": "nav.sguEssentialsDescription",
 };
 
 const headerLocalProducts = homePopularProductsData as Product[];
@@ -107,10 +135,14 @@ const mergeHeaderProducts = (
   return Array.from(productMap.values());
 };
 
+const getDisplayPrice = (product: BackendProduct) =>
+  product.pricing.salePrice ?? product.pricing.basePrice;
+
 export default function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { selectedLanguageCode, setSelectedLanguageCode, t } = useLanguage();
   const {
     selectedCurrencyCode,
     setSelectedCurrencyCode,
@@ -140,9 +172,6 @@ export default function AppHeader() {
   const [recentSearches, setRecentSearches] = useState<string[]>(
     getInitialRecentSearches,
   );
-  const [selectedLanguage, setSelectedLanguage] = useState<
-    (typeof LANGUAGES)[number]
-  >(getInitialSelectedLanguage);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const lastScrollY = useRef(0);
@@ -155,6 +184,36 @@ export default function AppHeader() {
 
   const isSearchRoute = pathname === "/search";
   const isCategoriesRoute = pathname === "/categories" || pathname === "/store";
+
+  const getPrimaryNavLabel = (href: string, fallback: string) => {
+    const key = PRIMARY_NAV_LABELS[href];
+    return key ? t(key) : fallback;
+  };
+
+  const getActionNavLabel = (href: string, fallback: string) => {
+    const key = ACTION_NAV_LABELS[href];
+    return key ? t(key) : fallback;
+  };
+
+  const getCategorySectionLabel = (fallback: string) => {
+    const key = CATEGORY_SECTION_LABELS[fallback];
+    return key ? t(key) : fallback;
+  };
+
+  const getCategoryItemLabel = (href: string, fallback: string) => {
+    const key = CATEGORY_ITEM_LABELS[href];
+    return key ? t(key) : fallback;
+  };
+
+  const getCategoryItemDescription = (href: string, fallback?: string) => {
+    const key = CATEGORY_ITEM_DESCRIPTIONS[href];
+    if (!key || !fallback) {
+      return fallback;
+    }
+
+    return t(key);
+  };
+
   const displayedSubtotal = items.reduce(
     (total, item) =>
       total +
@@ -428,10 +487,6 @@ export default function AppHeader() {
   }, [isPreferencesOpen]);
 
   useEffect(() => {
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLanguage.code);
-  }, [selectedLanguage]);
-
-  useEffect(() => {
     closeDesktopMenus();
     setIsMobileCategoriesOpen(false);
     closeCart();
@@ -465,7 +520,7 @@ export default function AppHeader() {
         <div className="container-shell flex items-center justify-center py-2">
           <p className="flex flex-wrap items-center justify-center gap-1.5 text-center text-[10px] font-bold leading-relaxed tracking-[0.16em] uppercase sm:gap-2">
             <span>
-              Free delivery on campus for orders bought through online payment
+              {t("header.promo")}
             </span>
             <FiCreditCard
               className="hidden h-4 w-4 text-white sm:block"
@@ -480,7 +535,7 @@ export default function AppHeader() {
           <Link
             href="/"
             className="logo-safe-area -m-4 inline-flex focus-visible:rounded-md"
-            aria-label="Go to SGU Campus Store home page"
+            aria-label={t("header.homeAria")}
             onClick={() => {
               setIsMobileOpen(false);
               closeDesktopMenus();
@@ -529,7 +584,7 @@ export default function AppHeader() {
                         setIsPreferencesOpen(false);
                       }}
                     >
-                      <span>{item.label}</span>
+                      <span>{getPrimaryNavLabel(item.href, item.label)}</span>
                       <FiChevronDown
                         aria-hidden="true"
                         className={`h-4 w-4 transition-transform ${
@@ -552,7 +607,7 @@ export default function AppHeader() {
                             {CATEGORY_MENU_SECTIONS.map((section) => (
                               <div key={section.label}>
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  {section.label}
+                                  {getCategorySectionLabel(section.label)}
                                 </p>
                                 <ul className="mt-2 flex flex-col gap-2">
                                   {section.items.map((entry) => (
@@ -567,11 +622,17 @@ export default function AppHeader() {
                                         }}
                                       >
                                         <p className="text-sm font-semibold text-sgu-navy">
-                                          {entry.label}
+                                          {getCategoryItemLabel(
+                                            entry.href,
+                                            entry.label,
+                                          )}
                                         </p>
                                         {entry.description ? (
                                           <p className="mt-0.5 text-xs text-slate-500">
-                                            {entry.description}
+                                            {getCategoryItemDescription(
+                                              entry.href,
+                                              entry.description,
+                                            )}
                                           </p>
                                         ) : null}
                                       </Link>
@@ -591,7 +652,7 @@ export default function AppHeader() {
                                 setIsAccountMenuOpen(false);
                               }}
                             >
-                              View all categories
+                              {t("header.viewAllCategories")}
                             </Link>
                           </div>
                         </motion.div>
@@ -616,7 +677,7 @@ export default function AppHeader() {
                     closeDesktopMenus();
                   }}
                 >
-                  {item.label}
+                  {getPrimaryNavLabel(item.href, item.label)}
                 </Link>
               );
             })}
@@ -646,7 +707,7 @@ export default function AppHeader() {
                   className={`inline-flex h-full w-10 items-center justify-center ${
                     isSearchOpen ? "text-sgu-navy" : ""
                   }`}
-                  aria-label="Open search"
+                  aria-label={t("header.searchOpenAria")}
                   onClick={() => {
                     setIsSearchOpen(true);
                     setIsCategoriesOpen(false);
@@ -670,7 +731,7 @@ export default function AppHeader() {
                           setIsSearchOpen(false);
                         }
                       }}
-                      placeholder="Search products..."
+                      placeholder={t("header.searchPlaceholder")}
                       className="h-full flex-1 border-0 bg-transparent pr-2 text-sm font-medium text-sgu-navy placeholder:text-slate-400 focus:outline-none"
                       initial={{ opacity: 0, x: 8 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -690,7 +751,7 @@ export default function AppHeader() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -8 }}
                     >
-                      Search
+                      {t("header.searchLabel")}
                     </motion.button>
                   )}
                 </AnimatePresence>
@@ -699,7 +760,7 @@ export default function AppHeader() {
                   <button
                     type="button"
                     className="mr-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                    aria-label="Close search"
+                    aria-label={t("header.searchCloseAria")}
                     onClick={() => setIsSearchOpen(false)}
                   >
                     <svg
@@ -729,11 +790,11 @@ export default function AppHeader() {
                       <>
                         <div className="p-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Results
+                            {t("header.results")}
                           </p>
                           {isDropdownSearching ? (
                             <p className="mt-2 text-sm text-slate-500">
-                              Searching...
+                              {t("header.searching")}
                             </p>
                           ) : dropdownResults.length > 0 ? (
                             <ul className="mt-2 flex flex-col gap-0.5">
@@ -748,9 +809,9 @@ export default function AppHeader() {
                                     }}
                                   >
                                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-slate-100">
-                                      {product.imageUrl ? (
+                                      {product.image ? (
                                         <Image
-                                          src={product.imageUrl}
+                                          src={product.image}
                                           alt={product.name}
                                           fill
                                           sizes="40px"
@@ -773,7 +834,10 @@ export default function AppHeader() {
                                       ) : null}
                                     </div>
                                     <p className="ml-2 flex-shrink-0 text-sm font-bold text-sgu-navy">
-                                      {formatPrice(product.price, "USD")}
+                                      {formatPrice(
+                                        getDisplayPrice(product),
+                                        product.pricing.currency,
+                                      )}
                                     </p>
                                   </Link>
                                 </li>
@@ -781,7 +845,7 @@ export default function AppHeader() {
                             </ul>
                           ) : (
                             <p className="mt-2 text-sm text-slate-500">
-                              No products found.
+                              {t("header.noProducts")}
                             </p>
                           )}
                         </div>
@@ -804,7 +868,7 @@ export default function AppHeader() {
                               className="h-3.5 w-3.5 flex-shrink-0"
                             />
                             <span>
-                              See all results for{" "}
+                              {t("header.seeAllResultsFor")}{" "}
                               <strong>{searchQuery.trim()}</strong>
                             </span>
                           </button>
@@ -813,7 +877,7 @@ export default function AppHeader() {
                     ) : (
                       <div className="p-3">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Recent searches
+                          {t("header.recentSearches")}
                         </p>
                         {recentSearches.length > 0 ? (
                           <ul className="mt-2 flex flex-col gap-1">
@@ -831,7 +895,7 @@ export default function AppHeader() {
                           </ul>
                         ) : (
                           <p className="mt-2 text-sm text-slate-500">
-                            No recent searches yet.
+                            {t("header.noRecentSearches")}
                           </p>
                         )}
                       </div>
@@ -857,10 +921,12 @@ export default function AppHeader() {
                       : "border-slate-300 text-sgu-navy hover:border-sgu-navy/50 hover:bg-slate-50"
                   }`}
                   aria-expanded={isPreferencesOpen}
-                  aria-label="Preferences"
+                  aria-label={t("header.preferences")}
                 >
                   <FiGlobe aria-hidden="true" className="h-4 w-4" />
-                  <span className="hidden lg:inline">Preferences</span>
+                  <span className="hidden lg:inline">
+                    {t("header.preferences")}
+                  </span>
                 </button>
 
                 <AnimatePresence>
@@ -873,7 +939,7 @@ export default function AppHeader() {
                       className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[220px] rounded-xl border border-slate-200 bg-white p-3 shadow-[0_14px_32px_rgba(15,23,42,0.16)]"
                     >
                       <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Currency
+                        {t("header.currency")}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {CURRENCIES.map((currency) => (
@@ -897,16 +963,18 @@ export default function AppHeader() {
                       <div className="mt-3">
                         <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-slate-500">
                           <FiGlobe aria-hidden="true" className="h-3.5 w-3.5" />
-                          Language
+                          {t("header.language")}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {LANGUAGES.map((language) => (
                             <button
                               key={language.code}
                               type="button"
-                              onClick={() => setSelectedLanguage(language)}
+                              onClick={() =>
+                                setSelectedLanguageCode(language.code)
+                              }
                               className={`rounded-md border px-2.5 py-1 text-xs font-bold transition-colors ${
-                                selectedLanguage.code === language.code
+                                selectedLanguageCode === language.code
                                   ? "border-sgu-navy bg-sgu-navy text-white"
                                   : "border-slate-300 text-sgu-navy hover:bg-slate-50"
                               }`}
@@ -955,7 +1023,7 @@ export default function AppHeader() {
                     >
                       <div className="border-b border-slate-200 pb-3">
                         <p className="text-sm font-semibold text-sgu-navy">
-                          Signed in as
+                          {t("header.signedInAs")}
                         </p>
                         <p className="mt-0.5 text-sm text-slate-600">
                           {user.email}
@@ -967,7 +1035,7 @@ export default function AppHeader() {
                         className="mt-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-sgu-navy transition-colors hover:bg-slate-50"
                         onClick={() => setIsAccountMenuOpen(false)}
                       >
-                        <span>View account details</span>
+                        <span>{t("header.viewAccountDetails")}</span>
                         <FiUser aria-hidden="true" className="h-4 w-4" />
                       </Link>
 
@@ -976,7 +1044,7 @@ export default function AppHeader() {
                         className="mt-1 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-sgu-navy transition-colors hover:bg-slate-50"
                         onClick={() => setIsAccountMenuOpen(false)}
                       >
-                        <span>Wishlist</span>
+                        <span>{t("header.wishlist")}</span>
                         <FiHeart aria-hidden="true" className="h-4 w-4" />
                       </Link>
 
@@ -986,19 +1054,19 @@ export default function AppHeader() {
                           className="mt-1 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-sgu-turquoise transition-colors hover:bg-slate-50"
                           onClick={() => setIsAccountMenuOpen(false)}
                         >
-                          <span>Admin — Products & Users</span>
+                          <span>{t("header.adminProductsUsers")}</span>
                           <FiSettings aria-hidden="true" className="h-4 w-4" />
                         </Link>
                       )}
 
                       <div className="mt-2 rounded-lg bg-slate-50 p-3">
                         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                          Preferences
+                          {t("header.preferences")}
                         </p>
 
                         <div className="mt-2">
                           <p className="text-xs font-semibold text-slate-500">
-                            Currency
+                            {t("header.currency")}
                           </p>
                           <div className="mt-1 flex flex-wrap gap-2">
                             {CURRENCIES.map((currency) => (
@@ -1026,16 +1094,18 @@ export default function AppHeader() {
                               aria-hidden="true"
                               className="h-3.5 w-3.5"
                             />
-                            Language
+                            {t("header.language")}
                           </p>
                           <div className="mt-1 flex flex-wrap gap-2">
                             {LANGUAGES.map((language) => (
                               <button
                                 key={language.code}
                                 type="button"
-                                onClick={() => setSelectedLanguage(language)}
+                                onClick={() =>
+                                  setSelectedLanguageCode(language.code)
+                                }
                                 className={`rounded-md border px-2.5 py-1 text-xs font-bold transition-colors ${
-                                  selectedLanguage.code === language.code
+                                  selectedLanguageCode === language.code
                                     ? "border-sgu-navy bg-sgu-navy text-white"
                                     : "border-slate-300 text-sgu-navy hover:bg-white"
                                 }`}
@@ -1052,7 +1122,7 @@ export default function AppHeader() {
                         onClick={handleLogout}
                         className="mt-3 flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-sgu-navy transition-colors hover:bg-slate-50"
                       >
-                        <span>Logout</span>
+                        <span>{t("header.logout")}</span>
                         <FiLogOut aria-hidden="true" className="h-4 w-4" />
                       </button>
                     </motion.div>
@@ -1066,7 +1136,7 @@ export default function AppHeader() {
                 onClick={() => closeDesktopMenus()}
               >
                 <FiUser aria-hidden="true" className="h-4 w-4" />
-                <span className="hidden lg:inline">Account</span>
+                <span className="hidden lg:inline">{t("header.signIn")}</span>
               </Link>
             )}
 
@@ -1085,7 +1155,7 @@ export default function AppHeader() {
               aria-controls="cart-drawer"
             >
               <FiShoppingCart aria-hidden="true" className="h-4 w-4" />
-              <span className="hidden lg:inline">Cart</span>
+              <span className="hidden lg:inline">{t("header.cart")}</span>
               {itemCount > 0 ? (
                 <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-sgu-orange px-1.5 text-[10px] font-bold text-white">
                   {itemCount}
@@ -1097,7 +1167,7 @@ export default function AppHeader() {
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-md border border-slate-300 p-2 text-sgu-navy md:hidden"
-            aria-label="Toggle navigation menu"
+            aria-label={t("header.toggleNavigationMenu")}
             aria-controls="mobile-menu"
             aria-expanded={isMobileOpen}
             onClick={() => {
@@ -1124,7 +1194,7 @@ export default function AppHeader() {
           <>
             <motion.button
               type="button"
-              aria-label="Close cart drawer"
+              aria-label={t("header.closeCartDrawerAria")}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1141,16 +1211,18 @@ export default function AppHeader() {
             >
               <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <div>
-                  <p className="text-lg font-bold text-sgu-navy">Your Cart</p>
+                  <p className="text-lg font-bold text-sgu-navy">
+                    {t("header.yourCart")}
+                  </p>
                   <p className="text-sm text-slate-500">
-                    {itemCount} {itemCount === 1 ? "item" : "items"}
+                    {itemCount} {itemCount === 1 ? t("header.item") : t("header.items")}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={closeCart}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50"
-                  aria-label="Close cart drawer"
+                  aria-label={t("header.closeCartDrawerAria")}
                 >
                   <FiX aria-hidden="true" className="h-4 w-4" />
                 </button>
@@ -1213,7 +1285,7 @@ export default function AppHeader() {
                                       )
                                     }
                                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50"
-                                    aria-label={`Decrease quantity for ${item.name}`}
+                                    aria-label={`${t("header.decreaseQuantityFor")} ${item.name}`}
                                   >
                                     <FiMinus className="h-3.5 w-3.5" />
                                   </button>
@@ -1229,7 +1301,7 @@ export default function AppHeader() {
                                       )
                                     }
                                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50"
-                                    aria-label={`Increase quantity for ${item.name}`}
+                                    aria-label={`${t("header.increaseQuantityFor")} ${item.name}`}
                                   >
                                     <FiPlus className="h-3.5 w-3.5" />
                                   </button>
@@ -1237,7 +1309,7 @@ export default function AppHeader() {
                                     type="button"
                                     onClick={() => removeItem(item.key)}
                                     className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50"
-                                    aria-label={`Remove ${item.name} from cart`}
+                                    aria-label={`${t("header.removeFromCart")} ${item.name}`}
                                   >
                                     <FiTrash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -1253,7 +1325,7 @@ export default function AppHeader() {
                   <div className="border-t border-slate-200 bg-white px-5 py-4">
                     <div className="mb-4 flex items-center justify-between">
                       <span className="text-sm font-semibold text-slate-500">
-                        Subtotal
+                        {t("header.subtotal")}
                       </span>
                       <span className="text-lg font-black text-sgu-navy">
                         {formatSelectedAmount(displayedSubtotal)}
@@ -1268,7 +1340,7 @@ export default function AppHeader() {
                         setIsMobileOpen(false);
                       }}
                     >
-                      Go to checkout
+                      {t("header.goToCheckout")}
                     </Link>
                   </div>
                 </>
@@ -1276,10 +1348,10 @@ export default function AppHeader() {
                 <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
                   <FiShoppingCart className="h-10 w-10 text-slate-300" />
                   <p className="mt-4 text-lg font-bold text-sgu-navy">
-                    Your cart is empty
+                    {t("header.yourCartIsEmpty")}
                   </p>
                   <p className="mt-1 text-sm text-slate-500">
-                    Add items from the store to get started.
+                    {t("header.addItemsToGetStarted")}
                   </p>
                   <Link
                     href="/store"
@@ -1289,7 +1361,7 @@ export default function AppHeader() {
                       closeDesktopMenus();
                     }}
                   >
-                    Continue shopping
+                    {t("header.continueShopping")}
                   </Link>
                 </div>
               )}
@@ -1325,7 +1397,7 @@ export default function AppHeader() {
                       setIsMobileCategoriesOpen((previous) => !previous)
                     }
                   >
-                    <span>{item.label}</span>
+                    <span>{getPrimaryNavLabel(item.href, item.label)}</span>
                     <FiChevronDown
                       aria-hidden="true"
                       className={`h-5 w-5 transition-transform ${
@@ -1347,7 +1419,7 @@ export default function AppHeader() {
                         {CATEGORY_MENU_SECTIONS.map((section) => (
                           <div key={section.label} className="mt-2">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {section.label}
+                              {getCategorySectionLabel(section.label)}
                             </p>
                             <ul className="mt-1 space-y-1">
                               {section.items.map((entry) => (
@@ -1362,7 +1434,10 @@ export default function AppHeader() {
                                       setIsCategoriesOpen(false);
                                     }}
                                   >
-                                    {entry.label}
+                                    {getCategoryItemLabel(
+                                      entry.href,
+                                      entry.label,
+                                    )}
                                   </Link>
                                 </li>
                               ))}
@@ -1380,7 +1455,7 @@ export default function AppHeader() {
                             setIsCategoriesOpen(false);
                           }}
                         >
-                          View all categories
+                          {t("header.viewAllCategories")}
                         </Link>
                       </motion.div>
                     ) : null}
@@ -1407,14 +1482,16 @@ export default function AppHeader() {
                   setIsMobileCategoriesOpen(false);
                 }}
               >
-                {item.label}
+                {getPrimaryNavLabel(item.href, item.label)}
               </Link>
             );
           })}
 
           <div className="mt-2 border-t border-slate-200 pt-3">
             <div className="flex items-center justify-between px-3 py-3">
-              <span className="text-sm font-semibold text-slate-500">View</span>
+              <span className="text-sm font-semibold text-slate-500">
+                {t("header.view")}
+              </span>
               <Link
                 href="/account"
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-sgu-navy transition-colors hover:bg-slate-50"
@@ -1424,13 +1501,13 @@ export default function AppHeader() {
                   closeDesktopMenus();
                 }}
               >
-                Account details
+                {user ? t("header.accountDetails") : t("header.signIn")}
               </Link>
             </div>
 
             <div className="px-3 pb-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Currency
+                {t("header.currency")}
               </p>
               <div className="mt-2 flex gap-2">
                 {CURRENCIES.map((currency) => (
@@ -1451,15 +1528,15 @@ export default function AppHeader() {
 
             <div className="px-3 pb-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Language
+                {t("header.language")}
               </p>
               <div className="mt-2 flex gap-2">
                 {LANGUAGES.map((language) => (
                   <button
                     key={language.code}
-                    onClick={() => setSelectedLanguage(language)}
+                    onClick={() => setSelectedLanguageCode(language.code)}
                     className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
-                      selectedLanguage.code === language.code
+                      selectedLanguageCode === language.code
                         ? "border-sgu-navy bg-sgu-navy text-white"
                         : "border-slate-300 text-sgu-navy hover:bg-slate-50"
                     }`}
@@ -1493,7 +1570,7 @@ export default function AppHeader() {
                   }}
                 >
                   <Icon aria-hidden="true" className="h-5 w-5" />
-                  <span>{item.label}</span>
+                  <span>{getActionNavLabel(item.href, item.label)}</span>
                 </Link>
               );
             })}
@@ -1514,7 +1591,7 @@ export default function AppHeader() {
               }`}
             >
               <FiShoppingCart aria-hidden="true" className="h-5 w-5" />
-              <span>Cart</span>
+              <span>{t("header.cart")}</span>
               {itemCount > 0 ? (
                 <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-sgu-orange px-1.5 py-0.5 text-xs font-bold text-white">
                   {itemCount}
@@ -1529,7 +1606,7 @@ export default function AppHeader() {
                 className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-base font-semibold text-sgu-gray hover:bg-slate-50"
               >
                 <FiLogOut aria-hidden="true" className="h-5 w-5" />
-                <span>Logout</span>
+                <span>{t("header.logout")}</span>
               </button>
             ) : null}
           </div>

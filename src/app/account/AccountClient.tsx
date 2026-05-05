@@ -140,20 +140,43 @@ export default function AccountClient() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-      <div className="card-surface p-8 md:p-10">
-        <p className="text-sm font-bold uppercase tracking-[0.18em] text-sgu-turquoise">
-          SGU Campus Store
-        </p>
-        <h1 className="mt-3 text-3xl font-bold text-sgu-navy">My Account</h1>
-        <p className="mt-4 text-sgu-gray">
-          Sign in to your account for a faster checkout and a smoother shopping experience.
-        </p>
+      <div className="card-surface relative overflow-hidden p-8 md:p-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-sgu-turquoise/15 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-14 bottom-6 h-28 w-28 rounded-full bg-sgu-navy/8 blur-2xl"
+        />
 
-        <div className="mt-8 rounded-xl bg-sgu-navy p-5 text-white">
-          <FiCheckCircle className="h-6 w-6 text-sgu-turquoise" aria-hidden="true" />
-          <h2 className="mt-3 font-bold">New here?</h2>
-          <p className="mt-2 text-sm text-white/80">
+        <div className="relative">
+          <span className="inline-flex items-center rounded-full border border-sgu-turquoise/30 bg-sgu-turquoise/10 px-3 py-1 text-[11px] font-bold tracking-[0.14em] uppercase text-sgu-turquoise">
+            SGU Campus Store
+          </span>
+          <h1 className="mt-4 text-3xl font-black tracking-tight text-sgu-navy md:text-4xl">
+            My Account
+          </h1>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-sgu-gray md:text-base">
+            Sign in to your account for a faster checkout and a smoother shopping experience.
+          </p>
+        </div>
+
+        <div className="relative mt-8 rounded-2xl border border-sgu-navy/10 bg-gradient-to-br from-sgu-navy to-[#273A87] p-5 text-white shadow-[0_14px_30px_rgba(30,30,100,0.22)]">
+          <div className="flex items-center gap-2.5">
+            <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+              <FiCheckCircle className="h-4 w-4 text-sgu-light-turquoise" aria-hidden="true" />
+            </div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white/95">
+              New here?
+            </h2>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-white/85">
             Create an account in seconds to save your details and make future checkout even easier.
+          </p>
+          <div className="mt-4 h-px bg-white/15" />
+          <p className="mt-4 text-xs font-semibold text-white/80">
+            Faster reorders, smoother checkout, and a personalized SGU store experience.
           </p>
         </div>
       </div>

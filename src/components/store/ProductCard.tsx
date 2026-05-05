@@ -25,6 +25,8 @@ export type MinimalProduct = Pick<
   | "inventoryLabel"
 >;
 
+const FALLBACK_PRODUCT_IMAGE = "/images/heroimage.png";
+
 const getCurrentPrice = (pricing: ProductPricing) =>
   pricing.salePrice ?? pricing.basePrice;
 
@@ -38,6 +40,7 @@ const isDiscounted = (pricing: ProductPricing) => {
 export default function ProductCard({ product }: { product: Product }) {
   const { items, addItem, updateQuantity, openCart } = useCart();
   const { formatPrice } = useCurrency();
+  const productImage = product.image.trim() || FALLBACK_PRODUCT_IMAGE;
   const cartItemKey = getCartItemKey(product.id);
   const cartQuantity =
     items.find((item) => item.key === cartItemKey)?.quantity ?? 0;
@@ -48,7 +51,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <Link href={product.href} className="block">
           <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-50">
             <Image
-              src={product.image}
+              src={productImage}
               alt={product.name}
               fill
               sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -139,7 +142,7 @@ export default function ProductCard({ product }: { product: Product }) {
                   id: product.id,
                   name: product.name,
                   subtitle: product.subtitle,
-                  image: product.image,
+                  image: productImage,
                   href: product.href,
                   pricing: product.pricing,
                   variantSelection: {},

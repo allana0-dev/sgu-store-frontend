@@ -53,6 +53,8 @@ export type Product = {
   variants?: ProductVariant[] | null;
 };
 
+const FALLBACK_PRODUCT_IMAGE = "/images/heroimage.png";
+
 const getCurrentPrice = (pricing: ProductPricing) =>
   pricing.salePrice ?? pricing.basePrice;
 
@@ -86,6 +88,54 @@ function StarRating({ rating, count }: { rating: number; count?: number }) {
   );
 }
 
+function StarRatingInput({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: number;
+  onChange: (rating: number) => void;
+  disabled?: boolean;
+}) {
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
+  const activeRating = hoveredRating ?? value;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        className="flex items-center gap-1 text-xl text-sgu-orange"
+        role="radiogroup"
+        aria-label="Select a rating"
+      >
+        {[1, 2, 3, 4, 5].map((ratingValue) => {
+          const isFilled = ratingValue <= activeRating;
+          return (
+            <button
+              key={ratingValue}
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(ratingValue)}
+              onMouseEnter={() => setHoveredRating(ratingValue)}
+              onMouseLeave={() => setHoveredRating(null)}
+              onFocus={() => setHoveredRating(ratingValue)}
+              onBlur={() => setHoveredRating(null)}
+              aria-label={`Rate ${ratingValue} star${ratingValue === 1 ? "" : "s"}`}
+              aria-checked={value === ratingValue}
+              role="radio"
+              className="rounded-md p-1 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-sgu-turquoise disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isFilled ? <FaStar /> : <FaRegStar />}
+            </button>
+          );
+        })}
+      </div>
+      <span className="text-xs font-semibold text-slate-500">
+        {value} out of 5 stars
+      </span>
+    </div>
+  );
+}
+
 export default function ProductDetailClient({
   product,
   relatedProducts,
@@ -95,7 +145,12 @@ export default function ProductDetailClient({
 }) {
   const { items, addItem, updateQuantity, openCart } = useCart();
   const { formatPrice } = useCurrency();
-  const [activeImage, setActiveImage] = useState(product.image);
+  const productImages = [product.image, ...product.images]
+    .map((image) => image.trim())
+    .filter((image, index, allImages) => image && allImages.indexOf(image) === index);
+  const primaryImage = productImages[0] ?? FALLBACK_PRODUCT_IMAGE;
+  const thumbnailImages = productImages.slice(1);
+  const [activeImage, setActiveImage] = useState(primaryImage);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<
     Record<string, string>
@@ -127,7 +182,7 @@ export default function ProductDetailClient({
         id: product.id,
         name: product.name,
         subtitle: product.subtitle,
-        image: product.image,
+        image: primaryImage,
         href: product.href,
         pricing: product.pricing,
         variantSelection: selectedVariants,
@@ -258,9 +313,9 @@ export default function ProductDetailClient({
           </div>
 
           {/* Thumbnails */}
-          {product.images && product.images.length > 1 && (
+          {thumbnailImages.length > 0 && (
             <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {product.images.map((img, idx) => (
+              {thumbnailImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImage(img)}
@@ -272,7 +327,7 @@ export default function ProductDetailClient({
                 >
                   <Image
                     src={img}
-                    alt={`Thumbnail ${idx}`}
+                    alt={`Thumbnail ${idx + 1}`}
                     fill
                     className="object-contain p-2"
                   />
@@ -597,22 +652,14 @@ export default function ProductDetailClient({
                       />
                     </label>
 
-                    <label className="flex flex-col gap-2 text-sm font-bold text-sgu-navy">
-                      Rating
-                      <select
+                    <div className="flex flex-col gap-2 text-sm font-bold text-sgu-navy">
+                      <span>Rating</span>
+                      <StarRatingInput
                         value={reviewRating}
-                        onChange={(event) =>
-                          setReviewRating(Number(event.target.value))
-                        }
-                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-sgu-turquoise"
-                      >
-                        {[5, 4, 3, 2, 1].map((rating) => (
-                          <option key={rating} value={rating}>
-                            {rating} star{rating === 1 ? "" : "s"}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        onChange={setReviewRating}
+                        disabled={isSubmittingReview}
+                      />
+                    </div>
                   </div>
 
                   <label className="flex flex-col gap-2 text-sm font-bold text-sgu-navy">
@@ -727,7 +774,7 @@ export default function ProductDetailClient({
               >
                 <div className="relative aspect-square w-full rounded-xl bg-slate-50 mb-4 overflow-hidden">
                   <Image
-                    src={rp.image}
+                    src={rp.image.trim() || rp.images[0]?.trim() || FALLBACK_PRODUCT_IMAGE}
                     alt={rp.name}
                     fill
                     className="object-contain p-4 group-hover:scale-105 transition-transform"

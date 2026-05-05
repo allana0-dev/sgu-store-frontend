@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FiAlertTriangle,
   FiCheck,
@@ -33,11 +33,13 @@ import {
 
 const EMPTY_FORM = {
   name: "",
+  subtitle: "",
   description: "",
   category: "",
+  customCategory: "",
   tags: "",
-  imageUrl: "",
-  price: "",
+  image: "",
+  basePrice: "",
   rating: "",
   reviewCount: "",
   inventory: "",
@@ -47,11 +49,103 @@ const EMPTY_FORM = {
 
 type FormState = typeof EMPTY_FORM;
 
+const CUSTOM_CATEGORY_VALUE = "__custom__";
+
+const DEFAULT_CATEGORY_OPTIONS = [
+  { value: "books", label: "Books" },
+  { value: "supplies", label: "Supplies" },
+  { value: "apparel", label: "Apparel" },
+  { value: "snacks", label: "Snacks" },
+  { value: "essentials", label: "Essentials" },
+  { value: "tech", label: "Tech" },
+];
+
+const DEFAULT_TAG_OPTIONS = [
+  "textbook",
+  "medicine",
+  "core",
+  "bag",
+  "merch",
+  "essentials",
+  "drinkware",
+  "snack",
+  "energy",
+  "grocery",
+  "supplies",
+  "notes",
+  "study",
+  "hygiene",
+  "pads",
+  "protein",
+  "vegan",
+  "gluten-free",
+  "non-gmo",
+];
+
+function titleCase(value: string) {
+  return value
+    .replace(/[-_]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+function parseTagList(value: string) {
+  return value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function uniqueLowerCased(values: string[]) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  values.forEach((value) => {
+    const normalized = value.trim();
+    if (!normalized) return;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push(normalized);
+  });
+
+  return result;
+}
+
 function formatPrice(n: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(n);
+}
+
+function getCurrentPrice(product: AdminProduct) {
+  return product.pricing.salePrice ?? product.pricing.basePrice;
+}
+
+function getInventoryStatus(inStock: boolean, inventory: number) {
+  if (!inStock || inventory <= 0) {
+    return "out_of_stock" as const;
+  }
+
+  if (inventory <= 5) {
+    return "low_stock" as const;
+  }
+
+  return "in_stock" as const;
+}
+
+function getInventoryLabel(status: ReturnType<typeof getInventoryStatus>) {
+  if (status === "out_of_stock") {
+    return "Out of Stock";
+  }
+
+  if (status === "low_stock") {
+    return "Low Stock";
+  }
+
+  return "In Stock";
 }
 
 function FormField({
@@ -111,7 +205,7 @@ const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-sgu-navy placeholder:text-slate-400 focus:border-sgu-turquoise focus:outline-none transition-colors";
 
 export default function AdminProductsClient() {
-  const { token } = useAuth();
+  const { token, isLoading: isAuthLoading } = useAuth();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -132,6 +226,30 @@ export default function AdminProductsClient() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [tagDraft, setTagDraft] = useState("");
+
+  const categoryOptions = useMemo(() => {
+    const options = new Map<string, string>(
+      DEFAULT_CATEGORY_OPTIONS.map((option) => [option.value, option.label]),
+    );
+
+    products.forEach((product) => {
+      const category = product.category?.trim();
+      if (!category || options.has(category)) return;
+      options.set(category, titleCase(category));
+    });
+
+    return Array.from(options.entries()).map(([value, label]) => ({
+      value,
+      label,
+    }));
+  }, [products]);
+
+  const tagOptions = useMemo(() => {
+    const fromProducts = products.flatMap((product) => product.tags);
+    const merged = uniqueLowerCased([...DEFAULT_TAG_OPTIONS, ...fromProducts]);
+    return merged.sort((a, b) => a.localeCompare(b));
+  }, [products]);
 
   const loadProducts = useCallback(async () => {
     setIsLoading(true);
@@ -168,37 +286,48 @@ export default function AdminProductsClient() {
   }, [token]);
 
   useEffect(() => {
+    if (isAuthLoading) return;
+
     const timer = window.setTimeout(() => {
       void loadProducts();
       void loadUsers();
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [loadProducts, loadUsers]);
+  }, [loadProducts, loadUsers, isAuthLoading]);
 
   const openCreateModal = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setTagDraft("");
     setSaveError(null);
     setImageError(false);
     setShowModal(true);
   };
 
   const openEditModal = (product: AdminProduct) => {
+    const rawCategory = product.category?.trim() ?? "";
+    const usesCustomCategory =
+      rawCategory.length > 0 &&
+      !categoryOptions.some((option) => option.value === rawCategory);
+
     setEditingId(product.id);
     setForm({
       name: product.name,
+      subtitle: product.subtitle ?? "",
       description: product.description ?? "",
-      category: product.category ?? "",
+      category: usesCustomCategory ? CUSTOM_CATEGORY_VALUE : rawCategory,
+      customCategory: usesCustomCategory ? rawCategory : "",
       tags: product.tags.join(", "),
-      imageUrl: product.imageUrl ?? "",
-      price: String(product.price),
+      image: product.image ?? "",
+      basePrice: String(product.pricing.basePrice),
       rating: product.rating !== null ? String(product.rating) : "",
       reviewCount: String(product.reviewCount),
       inventory: String(product.inventory),
-      inStock: product.inStock,
+      inStock: product.inventoryStatus !== "out_of_stock",
       isActive: product.isActive,
     });
+    setTagDraft("");
     setSaveError(null);
     setImageError(false);
     setShowModal(true);
@@ -208,6 +337,7 @@ export default function AdminProductsClient() {
     setShowModal(false);
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setTagDraft("");
     setSaveError(null);
     setImageError(false);
   };
@@ -217,7 +347,7 @@ export default function AdminProductsClient() {
     value: FormState[K],
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (key === "imageUrl") setImageError(false);
+    if (key === "image") setImageError(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -225,26 +355,61 @@ export default function AdminProductsClient() {
     setSaving(true);
     setSaveError(null);
 
-    const tagsArray = form.tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+    const tagsArray = uniqueLowerCased(parseTagList(form.tags));
+    const resolvedCategory =
+      form.category === CUSTOM_CATEGORY_VALUE
+        ? form.customCategory.trim()
+        : form.category.trim();
+
+    if (form.category === CUSTOM_CATEGORY_VALUE && !resolvedCategory) {
+      setSaveError("Enter a custom category or pick one from the list.");
+      setSaving(false);
+      return;
+    }
 
     try {
+      const parsedBasePrice = form.basePrice ? parseFloat(form.basePrice) : NaN;
+      const parsedInventory = form.inventory ? parseInt(form.inventory, 10) : 0;
+      const inventoryStatus = getInventoryStatus(form.inStock, parsedInventory);
+      const inventoryLabel = getInventoryLabel(inventoryStatus);
+      const primaryImage = form.image.trim();
+
+      if (!editingId && !primaryImage) {
+        setSaveError("Image URL is required.");
+        setSaving(false);
+        return;
+      }
+
+      if (!editingId && Number.isNaN(parsedBasePrice)) {
+        setSaveError("Price is required.");
+        setSaving(false);
+        return;
+      }
+
       if (editingId) {
         const payload: UpdateProductPayload = {
           name: form.name || undefined,
+          subtitle: form.subtitle || undefined,
           description: form.description || undefined,
-          category: form.category || undefined,
+          category: resolvedCategory || undefined,
           tags: tagsArray,
-          imageUrl: form.imageUrl || undefined,
-          price: form.price ? parseFloat(form.price) : undefined,
+          image: primaryImage || undefined,
+          images: primaryImage ? [primaryImage] : undefined,
+          pricing: form.basePrice
+            ? {
+                basePrice: parsedBasePrice,
+              }
+            : undefined,
+          inventoryStatus,
+          inventoryLabel,
+          department: resolvedCategory
+            ? titleCase(resolvedCategory)
+            : undefined,
           rating: form.rating ? parseFloat(form.rating) : undefined,
           reviewCount: form.reviewCount
             ? parseInt(form.reviewCount, 10)
             : undefined,
-          inventory: form.inventory ? parseInt(form.inventory, 10) : undefined,
-          inStock: form.inStock,
+          inventory: form.inventory ? parsedInventory : undefined,
           isActive: form.isActive,
         };
         const updated = await updateProduct(token, editingId, payload);
@@ -255,15 +420,30 @@ export default function AdminProductsClient() {
       } else {
         const payload: CreateProductPayload = {
           name: form.name,
+          subtitle: form.subtitle || form.name,
           description: form.description || undefined,
-          category: form.category || undefined,
+          category: resolvedCategory || undefined,
           tags: tagsArray,
-          imageUrl: form.imageUrl || undefined,
-          price: parseFloat(form.price),
+          image: primaryImage,
+          images: [primaryImage],
+          href: `/store/${crypto.randomUUID()}`,
+          pricing: {
+            currency: "USD",
+            basePrice: parsedBasePrice,
+            salePrice: null,
+            compareAtPrice: null,
+          },
+          inventoryStatus,
+          inventoryLabel,
+          department: resolvedCategory
+            ? titleCase(resolvedCategory)
+            : "General",
+          gender: "unisex",
+          dietary: null,
+          variants: null,
           rating: form.rating ? parseFloat(form.rating) : undefined,
           reviewCount: form.reviewCount ? parseInt(form.reviewCount, 10) : 0,
-          inventory: form.inventory ? parseInt(form.inventory, 10) : 0,
-          inStock: form.inStock,
+          inventory: parsedInventory,
           isActive: form.isActive,
         };
         const created = await createProduct(token, payload);
@@ -281,6 +461,26 @@ export default function AdminProductsClient() {
     }
   };
 
+  const addSuggestedTag = (nextTag: string) => {
+    const current = parseTagList(form.tags);
+    const merged = uniqueLowerCased([...current, nextTag]);
+    handleFieldChange("tags", merged.join(", "));
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    const current = parseTagList(form.tags);
+    const filtered = current.filter(
+      (tag) => tag.toLowerCase() !== tagToRemove.toLowerCase(),
+    );
+    handleFieldChange("tags", filtered.join(", "));
+  };
+
+  const selectedTags = parseTagList(form.tags);
+  const availableTagOptions = tagOptions.filter(
+    (tag) =>
+      !selectedTags.some((selected) => selected.toLowerCase() === tag),
+  );
+
   const filtered = products.filter((p) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -293,8 +493,12 @@ export default function AdminProductsClient() {
 
   const totalCount = products.length;
   const activeCount = products.filter((p) => p.isActive).length;
-  const inStockCount = products.filter((p) => p.inStock).length;
-  const outOfStockCount = products.filter((p) => !p.inStock).length;
+  const inStockCount = products.filter(
+    (p) => p.inventoryStatus !== "out_of_stock",
+  ).length;
+  const outOfStockCount = products.filter(
+    (p) => p.inventoryStatus === "out_of_stock",
+  ).length;
   const filteredUsers = users.filter((entry) => {
     if (!userSearchQuery) return true;
     const query = userSearchQuery.toLowerCase();
@@ -306,7 +510,9 @@ export default function AdminProductsClient() {
     );
   });
   const totalUsers = users.length;
-  const adminUsersCount = users.filter((entry) => entry.role === "ADMIN").length;
+  const adminUsersCount = users.filter(
+    (entry) => entry.role === "ADMIN",
+  ).length;
   const customerUsersCount = users.filter(
     (entry) => entry.role === "CUSTOMER",
   ).length;
@@ -334,8 +540,13 @@ export default function AdminProductsClient() {
           existing.id === updated.id ? { ...existing, ...updated } : existing,
         ),
       );
-      setRoleDraftById((previous) => ({ ...previous, [updated.id]: updated.role }));
-      setSuccessMessage(`Role updated: ${updated.fullName} is now ${updated.role}.`);
+      setRoleDraftById((previous) => ({
+        ...previous,
+        [updated.id]: updated.role,
+      }));
+      setSuccessMessage(
+        `Role updated: ${updated.fullName} is now ${updated.role}.`,
+      );
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       setUserSaveError(
@@ -518,10 +729,10 @@ export default function AdminProductsClient() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
-                            {product.imageUrl ? (
+                            {product.image ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={product.imageUrl}
+                                src={product.image}
                                 alt={product.name}
                                 className="h-full w-full object-cover"
                               />
@@ -545,7 +756,7 @@ export default function AdminProductsClient() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-sgu-navy">
-                        {formatPrice(product.price)}
+                        {formatPrice(getCurrentPrice(product))}
                       </td>
                       <td className="px-4 py-3 text-right text-slate-600">
                         {product.rating !== null ? (
@@ -563,17 +774,19 @@ export default function AdminProductsClient() {
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                            product.inStock
+                            product.inventoryStatus !== "out_of_stock"
                               ? "bg-emerald-50 text-emerald-700"
                               : "bg-red-50 text-sgu-red"
                           }`}
                         >
-                          {product.inStock ? (
+                          {product.inventoryStatus !== "out_of_stock" ? (
                             <FiCheckCircle className="h-3 w-3" />
                           ) : (
                             <FiXCircle className="h-3 w-3" />
                           )}
-                          {product.inStock ? "In Stock" : "Out"}
+                          {product.inventoryStatus === "out_of_stock"
+                            ? "Out"
+                            : "In Stock"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -674,7 +887,8 @@ export default function AdminProductsClient() {
           </div>
           {userSearchQuery && (
             <p className="text-sm text-slate-500">
-              {filteredUsers.length} result{filteredUsers.length !== 1 ? "s" : ""}
+              {filteredUsers.length} result
+              {filteredUsers.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
@@ -688,7 +902,9 @@ export default function AdminProductsClient() {
 
         {usersLoading ? (
           <div className="flex min-h-[24vh] items-center justify-center">
-            <p className="text-sm font-semibold text-slate-500">Loading users…</p>
+            <p className="text-sm font-semibold text-slate-500">
+              Loading users…
+            </p>
           </div>
         ) : usersLoadError ? (
           <div className="card-surface p-10 text-center">
@@ -742,11 +958,16 @@ export default function AdminProductsClient() {
                     const isSaving = savingRoleUserId === entry.id;
 
                     return (
-                      <tr key={entry.id} className="transition-colors hover:bg-slate-50">
+                      <tr
+                        key={entry.id}
+                        className="transition-colors hover:bg-slate-50"
+                      >
                         <td className="px-4 py-3 font-semibold text-sgu-navy">
                           {entry.fullName}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{entry.email}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {entry.email}
+                        </td>
                         <td className="px-4 py-3 font-mono text-xs text-slate-400">
                           {entry.id}
                         </td>
@@ -765,7 +986,10 @@ export default function AdminProductsClient() {
                           <select
                             value={draftRole}
                             onChange={(e) =>
-                              handleRoleDraftChange(entry.id, e.target.value as UserRole)
+                              handleRoleDraftChange(
+                                entry.id,
+                                e.target.value as UserRole,
+                              )
                             }
                             className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-sgu-navy focus:border-sgu-turquoise focus:outline-none"
                           >
@@ -774,7 +998,9 @@ export default function AdminProductsClient() {
                           </select>
                         </td>
                         <td className="px-4 py-3 text-xs text-slate-500">
-                          {new Date(entry.updatedAt).toLocaleDateString("en-US")}
+                          {new Date(entry.updatedAt).toLocaleDateString(
+                            "en-US",
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <button
@@ -865,6 +1091,20 @@ export default function AdminProductsClient() {
                 />
               </FormField>
 
+              <FormField label="Subtitle" required>
+                <input
+                  type="text"
+                  value={form.subtitle}
+                  onChange={(e) =>
+                    handleFieldChange("subtitle", e.target.value)
+                  }
+                  placeholder="Short product subtitle"
+                  required
+                  maxLength={180}
+                  className={inputClass}
+                />
+              </FormField>
+
               {/* Description */}
               <FormField label="Description">
                 <textarea
@@ -882,16 +1122,36 @@ export default function AdminProductsClient() {
               {/* Category + Tags */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField label="Category">
-                  <input
-                    type="text"
+                  <select
                     value={form.category}
-                    onChange={(e) =>
-                      handleFieldChange("category", e.target.value)
-                    }
-                    placeholder="e.g. Apparel"
-                    maxLength={120}
+                    onChange={(e) => {
+                      handleFieldChange("category", e.target.value);
+                      if (e.target.value !== CUSTOM_CATEGORY_VALUE) {
+                        handleFieldChange("customCategory", "");
+                      }
+                    }}
                     className={inputClass}
-                  />
+                  >
+                    <option value="">Select a category</option>
+                    {categoryOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                    <option value={CUSTOM_CATEGORY_VALUE}>Other</option>
+                  </select>
+                  {form.category === CUSTOM_CATEGORY_VALUE && (
+                    <input
+                      type="text"
+                      value={form.customCategory}
+                      onChange={(e) =>
+                        handleFieldChange("customCategory", e.target.value)
+                      }
+                      placeholder="Enter custom category"
+                      maxLength={120}
+                      className={`${inputClass} mt-2`}
+                    />
+                  )}
                 </FormField>
                 <FormField label="Tags (comma-separated)">
                   <input
@@ -901,27 +1161,68 @@ export default function AdminProductsClient() {
                     placeholder="e.g. hoodie, navy, casual"
                     className={inputClass}
                   />
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <select
+                      value={tagDraft}
+                      onChange={(e) => {
+                        const nextTag = e.target.value;
+                        setTagDraft("");
+                        if (!nextTag) return;
+                        addSuggestedTag(nextTag);
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">Add a suggested tag</option>
+                      {availableTagOptions.map((tag) => (
+                        <option key={tag} value={tag}>
+                          {titleCase(tag)}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedTags.length > 0 && (
+                      <span className="self-center text-xs font-semibold text-slate-500">
+                        {selectedTags.length} selected
+                      </span>
+                    )}
+                  </div>
+                  {selectedTags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {selectedTags.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
+                          aria-label={`Remove ${tag} tag`}
+                        >
+                          {tag}
+                          <FiX className="h-3 w-3" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </FormField>
               </div>
 
               {/* Image URL */}
-              <FormField label="Image URL">
+              <FormField label="Image URL" required>
                 <input
                   type="url"
-                  value={form.imageUrl}
+                  value={form.image}
                   onChange={(e) =>
-                    handleFieldChange("imageUrl", e.target.value)
+                    handleFieldChange("image", e.target.value)
                   }
                   placeholder="https://…"
                   maxLength={2048}
+                  required
                   className={inputClass}
                 />
-                {form.imageUrl && !imageError && (
+                {form.image && !imageError && (
                   <div className="mt-2 flex items-center gap-3">
                     <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={form.imageUrl}
+                        src={form.image}
                         alt="Preview"
                         className="h-full w-full object-cover"
                         onError={() => setImageError(true)}
@@ -930,7 +1231,7 @@ export default function AdminProductsClient() {
                     <p className="text-xs text-slate-400">Image preview</p>
                   </div>
                 )}
-                {form.imageUrl && imageError && (
+                {form.image && imageError && (
                   <p className="mt-1.5 text-xs text-slate-400">
                     Could not load image preview.
                   </p>
@@ -942,8 +1243,10 @@ export default function AdminProductsClient() {
                 <FormField label="Price (USD)" required>
                   <input
                     type="number"
-                    value={form.price}
-                    onChange={(e) => handleFieldChange("price", e.target.value)}
+                    value={form.basePrice}
+                    onChange={(e) =>
+                      handleFieldChange("basePrice", e.target.value)
+                    }
                     placeholder="0.00"
                     step="0.01"
                     min="0"

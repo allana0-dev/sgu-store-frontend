@@ -17,6 +17,12 @@ const getProductHref = (id: string) => `/store/${id}`;
 
 const localProducts = homePopularProductsData as Product[];
 
+const getDisplayPrice = (product: BackendProduct) =>
+  product.pricing.salePrice ?? product.pricing.basePrice;
+
+const isInStock = (product: BackendProduct) =>
+  product.inventoryStatus !== "out_of_stock";
+
 const mergeProducts = <T extends BackendProduct>(
   primaryProducts: T[],
   secondaryProducts: T[],
@@ -45,9 +51,9 @@ function ProductResultCard({
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="relative aspect-[4/3] bg-slate-50">
-        {product.imageUrl ? (
+        {product.image ? (
           <Image
-            src={product.imageUrl}
+            src={product.image}
             alt={product.name}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
@@ -71,15 +77,15 @@ function ProductResultCard({
         </p>
         <div className="mt-auto pt-4">
           <p className="text-xl font-black text-sgu-navy">
-            {formatPrice(product.price, "USD")}
+            {formatPrice(getDisplayPrice(product), product.pricing.currency)}
           </p>
           <p
             className={`mt-1 inline-flex items-center gap-1.5 text-xs font-bold ${
-              product.inStock ? "text-emerald-600" : "text-slate-400"
+              isInStock(product) ? "text-emerald-600" : "text-slate-400"
             }`}
           >
             <FiCheckCircle className="h-3.5 w-3.5" />
-            {product.inStock ? `${product.inventory} in stock` : "Out of stock"}
+            {isInStock(product) ? `${product.inventory} in stock` : "Out of stock"}
           </p>
         </div>
       </div>

@@ -4,34 +4,45 @@ import ProductDetailClient from "@/components/store/ProductDetailClient";
 import type { Product } from "@/components/store/ProductDetailClient";
 import { getProduct, type BackendProduct } from "@/lib/products";
 
+const localProducts = homePopularProductsData as Product[];
+const FALLBACK_PRODUCT_IMAGE = "/images/heroimage.png";
+
 function mapBackendToProduct(p: BackendProduct): Product {
+  const dedupedImages = [p.image, ...(p.images ?? [])]
+    .map((entry) => entry.trim())
+    .filter(
+      (entry, index, allEntries) =>
+        entry.length > 0 && allEntries.indexOf(entry) === index,
+    );
+  const image = dedupedImages[0] ?? FALLBACK_PRODUCT_IMAGE;
+
   return {
     id: p.id,
     name: p.name,
-    subtitle: p.category ?? "",
+    subtitle: p.subtitle || p.category || "",
     description: p.description ?? "",
-    images: p.imageUrl ? [p.imageUrl] : [],
-    image: p.imageUrl ?? "",
-    href: `/store/${p.id}`,
-    pricing: {
-      currency: "USD",
-      basePrice: p.price,
-      salePrice: null,
-      compareAtPrice: null,
-    },
-    inventoryStatus: p.inStock ? "in_stock" : "out_of_stock",
-    inventoryLabel: p.inStock ? "In Stock" : "Out of Stock",
+    images: dedupedImages.length > 0 ? dedupedImages : [image],
+    image,
+    href: p.href || `/store/${p.id}`,
+    pricing: p.pricing,
+    inventoryStatus: p.inventoryStatus,
+    inventoryLabel:
+      p.inventoryLabel ||
+      (p.inventoryStatus === "out_of_stock" ? "Out of Stock" : "In Stock"),
+    department: p.department,
+    gender: p.gender,
+    dietary: p.dietary,
     category: p.category ?? undefined,
     tags: p.tags,
     rating: p.rating ?? undefined,
     reviewCount: p.reviewCount,
-    variants: null,
+    variants: p.variants,
   };
 }
 
 async function getProductById(id: string): Promise<Product | null> {
-  const local = homePopularProductsData.find((p) => p.id === id);
-  if (local) return local as unknown as Product;
+  const local = localProducts.find((p) => p.id === id);
+  if (local) return local;
 
   try {
     const backendProduct = await getProduct(id);
@@ -56,7 +67,7 @@ export default async function ProductPage({
   }
 
   // Find related products (same category/department, fallback to first 4)
-  const relatedProducts = (homePopularProductsData as unknown as Product[])
+  const relatedProducts = localProducts
     .filter(
       (p) =>
         p.id !== productId &&
@@ -67,7 +78,7 @@ export default async function ProductPage({
 
   // If not enough related, pad with others
   if (relatedProducts.length < 4) {
-    const more = (homePopularProductsData as unknown as Product[])
+    const more = localProducts
       .filter((p) => p.id !== productId && !relatedProducts.includes(p))
       .slice(0, 4 - relatedProducts.length);
     relatedProducts.push(...more);
@@ -77,6 +88,7 @@ export default async function ProductPage({
     <main className="bg-surface min-h-screen py-8">
       <div className="container-shell">
         <ProductDetailClient
+          key={product.id}
           product={product}
           relatedProducts={relatedProducts}
         />

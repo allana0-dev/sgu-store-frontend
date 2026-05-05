@@ -1,17 +1,48 @@
 import { apiRequest } from "@/lib/api";
 import type { Product } from "@/components/store/ProductDetailClient";
 
+export type InventoryStatus = "in_stock" | "low_stock" | "out_of_stock";
+export type Gender = "women" | "men" | "unisex";
+
+export type ProductPricing = {
+  currency: string;
+  basePrice: number;
+  salePrice: number | null;
+  compareAtPrice: number | null;
+};
+
+export type ProductVariant = {
+  label: string;
+  options: string[];
+};
+
+function normalizeGender(value: string | undefined): Gender {
+  if (value === "women" || value === "men" || value === "unisex") {
+    return value;
+  }
+
+  return "unisex";
+}
+
 export type BackendProduct = {
   id: string;
+  href: string;
   name: string;
+  subtitle: string;
   description: string | null;
   category: string | null;
   tags: string[];
-  imageUrl: string | null;
-  price: number;
+  images: string[];
+  image: string;
+  pricing: ProductPricing;
+  inventoryStatus: InventoryStatus;
+  inventoryLabel: string;
+  department: string;
+  gender: Gender;
+  dietary: string[] | null;
+  variants: ProductVariant[] | null;
   rating: number | null;
   reviewCount: number;
-  inStock: boolean;
   inventory: number;
   isActive: boolean;
   createdAt: string;
@@ -34,6 +65,10 @@ export function getProduct(id: string) {
   return apiRequest<BackendProduct>(`/products/${encodeURIComponent(id)}`);
 }
 
+export function listProducts(limit = 10) {
+  return apiRequest<BackendProduct[]>(`/products?limit=${limit}`);
+}
+
 export function searchProducts(query: string, limit = 12, onlyInStock = false) {
   const params = new URLSearchParams({
     query,
@@ -47,6 +82,13 @@ export function searchProducts(query: string, limit = 12, onlyInStock = false) {
 export function mapLocalProductToBackendProduct(
   product: Product,
 ): BackendProduct {
+  const dedupedImages = [product.image, ...product.images]
+    .map((image) => image.trim())
+    .filter(
+      (image, index, allImages) =>
+        image.length > 0 && allImages.indexOf(image) === index,
+    );
+  const primaryImage = dedupedImages[0] ?? "/images/heroimage.png";
   const inventory =
     product.inventoryStatus === "out_of_stock"
       ? 0
@@ -54,15 +96,28 @@ export function mapLocalProductToBackendProduct(
 
   return {
     id: product.id,
+    href: product.href || `/store/${product.id}`,
     name: product.name,
+    subtitle: product.subtitle,
     description: product.description || product.subtitle || null,
     category: product.category || product.department || null,
     tags: product.tags || [],
-    imageUrl: product.image || product.images?.[0] || null,
-    price: product.pricing.salePrice ?? product.pricing.basePrice,
-    rating: null,
-    reviewCount: 0,
-    inStock: product.inventoryStatus !== "out_of_stock",
+    images: dedupedImages.length > 0 ? dedupedImages : [primaryImage],
+    image: primaryImage,
+    pricing: {
+      currency: product.pricing.currency,
+      basePrice: product.pricing.basePrice,
+      salePrice: product.pricing.salePrice,
+      compareAtPrice: product.pricing.compareAtPrice,
+    },
+    inventoryStatus: product.inventoryStatus,
+    inventoryLabel: product.inventoryLabel,
+    department: product.department ?? product.category ?? "General",
+    gender: normalizeGender(product.gender),
+    dietary: product.dietary ?? null,
+    variants: product.variants ?? null,
+    rating: product.rating ?? null,
+    reviewCount: product.reviewCount ?? 0,
     inventory,
     isActive: true,
     createdAt: "",
@@ -89,7 +144,7 @@ export function searchLocalProducts(
   return products
     .map(mapLocalProductToBackendProduct)
     .filter((product) => {
-      if (onlyInStock && !product.inStock) {
+      if (onlyInStock && product.inventoryStatus === "out_of_stock") {
         return false;
       }
 
@@ -123,7 +178,11 @@ export function getLocalRecommendations(
 
   return products
     .map(mapLocalProductToBackendProduct)
-    .filter((product) => !existingIdSet.has(product.id) && product.inStock)
+    .filter(
+      (product) =>
+        !existingIdSet.has(product.id) &&
+        product.inventoryStatus !== "out_of_stock",
+    )
     .map((product) => {
       const searchable = [
         product.name,

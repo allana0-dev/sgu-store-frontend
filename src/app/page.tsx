@@ -3,10 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import homeCategoriesData from "@/data/home-categories.json";
-import homePopularProductsData from "@/data/home-popular-products.json";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import ProductCard from "@/components/store/ProductCard";
+import type { Product } from "@/components/store/ProductDetailClient";
+import { listProducts, type BackendProduct } from "@/lib/products";
 import {
   FiArrowRight,
   FiPackage,
@@ -26,25 +28,42 @@ type HomeCategory = {
 
 const CATEGORIES: HomeCategory[] = homeCategoriesData;
 
-type ProductPricing = {
-  currency: string;
-  basePrice: number;
-  salePrice: number | null;
-  compareAtPrice: number | null;
-};
+const POPULAR_PRODUCTS_LIMIT = 10;
+const FALLBACK_PRODUCT_IMAGE = "/images/heroimage.png";
 
-type HomePopularProduct = {
-  id: string;
-  name: string;
-  subtitle: string;
-  image: string;
-  href: string;
-  pricing: ProductPricing;
-  inventoryStatus: "in_stock" | "low_stock";
-  inventoryLabel: string;
-};
+function mapBackendToHomeProduct(product: BackendProduct): Product {
+  const dedupedImages = [product.image, ...(product.images ?? [])]
+    .map((image) => image.trim())
+    .filter(
+      (image, index, allImages) =>
+        image.length > 0 && allImages.indexOf(image) === index,
+    );
+  const image = dedupedImages[0] ?? FALLBACK_PRODUCT_IMAGE;
+  const hasInventory = product.inventoryStatus !== "out_of_stock";
 
-const POPULAR_PRODUCTS = homePopularProductsData as HomePopularProduct[];
+  return {
+    id: product.id,
+    name: product.name,
+    subtitle: product.subtitle || product.category || "Campus essential",
+    description: product.description ?? "",
+    images: dedupedImages.length > 0 ? dedupedImages : [image],
+    image,
+    href: product.href || `/store/${product.id}`,
+    pricing: product.pricing,
+    inventoryStatus: product.inventoryStatus,
+    inventoryLabel:
+      product.inventoryLabel ||
+      (hasInventory ? "In Stock" : "Out of Stock"),
+    department: product.department,
+    gender: product.gender,
+    dietary: product.dietary,
+    category: product.category ?? undefined,
+    tags: product.tags,
+    rating: product.rating ?? undefined,
+    reviewCount: product.reviewCount,
+    variants: product.variants,
+  };
+}
 
 export default function Home() {
   return (
@@ -200,6 +219,34 @@ function CategoryGrid() {
 }
 
 function PopularOnCampus() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+
+    listProducts(POPULAR_PRODUCTS_LIMIT)
+      .then((backendProducts) => {
+        if (isActive) {
+          setProducts(backendProducts.map(mapBackendToHomeProduct));
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setProducts([]);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   return (
     <section className="container-shell">
       <SectionHeader
@@ -207,16 +254,28 @@ function PopularOnCampus() {
         ctaHref="/store"
         ctaLabel="View all products"
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {POPULAR_PRODUCTS.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={
-              product as import("@/components/store/ProductDetailClient").Product
-            }
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+          <p className="text-sm font-semibold text-slate-500">
+            Loading popular products...
+          </p>
+        </div>
+      ) : products.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+          <h3 className="text-lg font-black text-sgu-navy">
+            Products are coming soon
+          </h3>
+          <p className="mt-2 text-sm text-slate-500">
+            We&apos;re preparing the production catalog for launch.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

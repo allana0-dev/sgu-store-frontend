@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -6,27 +8,34 @@ import {
   FaLinkedinIn,
   FaYoutube,
 } from "react-icons/fa";
+import { useLanguage } from "@/components/language/LanguageProvider";
+import type { TranslationKey } from "@/lib/i18n";
 
-const CATEGORIES = [
-  { label: "Textbooks", href: "/categories" },
-  { label: "Medical Supplies", href: "/categories" },
-  { label: "Campus Apparel", href: "/categories" },
-  { label: "Snacks & Drinks", href: "/categories" },
-  { label: "School Essentials", href: "/categories" },
+type FooterLinkItem = {
+  labelKey: TranslationKey;
+  href: string;
+};
+
+const CATEGORIES: FooterLinkItem[] = [
+  { labelKey: "footer.textbooks", href: "/categories" },
+  { labelKey: "footer.medicalSupplies", href: "/categories" },
+  { labelKey: "footer.campusApparel", href: "/categories" },
+  { labelKey: "footer.snacksAndDrinks", href: "/categories" },
+  { labelKey: "footer.schoolEssentials", href: "/categories" },
 ];
 
-const SERVICES = [
-  { label: "Pick Up", href: "#" },
-  { label: "Delivery", href: "#" },
-  { label: "Account Signup", href: "/account" },
+const SERVICES: FooterLinkItem[] = [
+  { labelKey: "footer.pickUp", href: "#" },
+  { labelKey: "footer.delivery", href: "#" },
+  { labelKey: "footer.accountSignup", href: "/account" },
 ];
 
-const HELP = [
-  { label: "Returns", href: "#" },
-  { label: "Track Orders", href: "#" },
-  { label: "Contact Us", href: "/contact-us" },
-  { label: "Feedback", href: "#" },
-  { label: "Security & Fraud", href: "#" },
+const HELP: FooterLinkItem[] = [
+  { labelKey: "footer.returns", href: "#" },
+  { labelKey: "footer.trackOrders", href: "#" },
+  { labelKey: "footer.contactUs", href: "/contact-us" },
+  { labelKey: "footer.feedback", href: "#" },
+  { labelKey: "footer.securityFraud", href: "#" },
 ];
 
 const PAYMENT_METHODS = [
@@ -82,6 +91,8 @@ function FooterHeading({ title }: { title: string }) {
 }
 
 export default function AppFooter() {
+  const { t } = useLanguage();
+
   return (
     <footer className="mt-auto text-white">
       <div className="bg-sgu-navy">
@@ -119,7 +130,7 @@ export default function AppFooter() {
       <div className="border-t border-white/10 bg-sgu-navy">
         <div className="container-shell grid gap-10 py-10 md:grid-cols-2 xl:grid-cols-4">
           <section>
-            <FooterHeading title="Campus" />
+            <FooterHeading title={t("footer.campus")} />
             <p className="mt-4 text-lg font-semibold text-white">
               St. George&apos;s University
             </p>
@@ -129,7 +140,7 @@ export default function AppFooter() {
               Grenada, West Indies
             </p>
             <p className="mt-6 text-xs font-bold tracking-[0.12em] text-sgu-light-turquoise uppercase">
-              Accepted Payments
+              {t("footer.acceptedPayments")}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {PAYMENT_METHODS.map((method) => (
@@ -153,33 +164,33 @@ export default function AppFooter() {
           </section>
 
           <section>
-            <FooterHeading title="Categories" />
+            <FooterHeading title={t("footer.categories")} />
             <ul className="mt-4 space-y-3 text-sm font-semibold">
               {CATEGORIES.map((item) => (
-                <li key={item.label}>
-                  <FooterLink href={item.href} label={item.label} />
+                <li key={item.labelKey}>
+                  <FooterLink href={item.href} label={t(item.labelKey)} />
                 </li>
               ))}
             </ul>
           </section>
 
           <section>
-            <FooterHeading title="Services" />
+            <FooterHeading title={t("footer.services")} />
             <ul className="mt-4 space-y-3 text-sm font-semibold">
               {SERVICES.map((item) => (
-                <li key={item.label}>
-                  <FooterLink href={item.href} label={item.label} />
+                <li key={item.labelKey}>
+                  <FooterLink href={item.href} label={t(item.labelKey)} />
                 </li>
               ))}
             </ul>
           </section>
 
           <section>
-            <FooterHeading title="Help" />
+            <FooterHeading title={t("footer.help")} />
             <ul className="mt-4 space-y-3 text-sm font-semibold">
               {HELP.map((item) => (
-                <li key={item.label}>
-                  <FooterLink href={item.href} label={item.label} />
+                <li key={item.labelKey}>
+                  <FooterLink href={item.href} label={t(item.labelKey)} />
                 </li>
               ))}
             </ul>
@@ -197,13 +208,13 @@ export default function AppFooter() {
             href="#"
             className="font-semibold text-white/90 hover:text-white hover:underline hover:decoration-white hover:underline-offset-3"
           >
-            Accessibility
+            {t("footer.accessibility")}
           </a>
           <Link
             href="/contact-us"
             className="font-semibold text-white/90 hover:text-white hover:underline hover:decoration-white hover:underline-offset-3"
           >
-            Contact Us
+            {t("footer.contactUs")}
           </Link>
         </div>
       </div>
