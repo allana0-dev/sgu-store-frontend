@@ -8,7 +8,7 @@ export const CURRENCIES = [
 
 export type SupportedCurrencyCode = (typeof CURRENCIES)[number]["code"];
 
-export const DEFAULT_CURRENCY: SupportedCurrencyCode = "USD";
+export const DEFAULT_CURRENCY: SupportedCurrencyCode = "XCD";
 
 const SUPPORTED_CURRENCY_CODES = new Set<SupportedCurrencyCode>(
   CURRENCIES.map((currency) => currency.code),
